@@ -395,6 +395,147 @@ class CoinglassAPIv3(CoinglassParameterValidation):
             raise NoDataReturnedError()
 ##
 ##    
+## Funding Rate Section
+    def funding_rate_ohlc_history(
+        self,
+        exchange: str,
+        symbol: str,
+        interval: str,
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Fetch funding rate OHLC history data.
+
+        Args:
+            exchange: Exchange name (e.g., Binance)
+            symbol: Trading pair (e.g., BTCUSDT)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            start_time: Start time in seconds
+            end_time: End time in seconds
+
+        Returns:
+            pandas DataFrame with funding rate OHLC data
+        """
+        endpoint = "fundingRate/ohlc-history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time,
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+
+    def oi_weight_ohlc_history(
+        self,
+        symbol: str,
+        interval: str,
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Fetch open interest-weight OHLC history data.
+
+        Args:
+            symbol: Trading coin (e.g., BTC)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            start_time: Start time in seconds
+            end_time: End time in seconds
+
+        Returns:
+            pandas DataFrame with OI weight OHLC data
+        """
+        endpoint = "fundingRate/oi-weight-ohlc-history"
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time,
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+    
+    def vol_weight_ohlc_history(
+        self,
+        symbol: str,
+        interval: str,
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Fetch volume-weight OHLC history data.
+
+        Args:
+            symbol: Trading coin (e.g., BTC)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            start_time: Start time in seconds
+            end_time: End time in seconds
+
+        Returns:
+            pandas DataFrame with volume weight OHLC data
+        """
+        endpoint = "fundingRate/vol-weight-ohlc-history"
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time,
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+    
+    def funding_rate_exchange_list(self, symbol: str = "BTC") -> pd.DataFrame:
+        """
+        Fetch funding rate data from exchanges for a specific symbol.
+
+        Args:
+            symbol: Trading coin (e.g., BTC)
+
+        Returns:
+            pandas DataFrame with funding rate data from exchanges
+        """
+        endpoint = "fundingRate/exchange-list"
+        params = {"symbol": symbol}
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+
+        # Process the data
+        result = []
+        for item in data:
+            symbol = item["symbol"]
+            for margin_type in ["usdtOrUsdMarginList", "tokenMarginList"]:
+                for exchange_data in item.get(margin_type, []):
+                    result.append({
+                        "symbol": symbol,
+                        "margin_type": "USDT/USD" if margin_type == "usdtOrUsdMarginList" else "Token",
+                        "exchange": exchange_data.get("exchange", "Unknown"),
+                        "funding_rate": exchange_data.get("fundingRate", exchange_data.get("currentFundingRate", None)),
+                        "next_funding_time": pd.to_datetime(exchange_data.get("nextFundingTime", None), unit="ms", errors='coerce')
+                    })
+
+        return pd.DataFrame(result)
+##
+##    
+## Cem Ended here
+##    
 ## Cem Ended here
     def perpetual_market(self, symbol: str) -> pd.DataFrame:
         response = self._get(
