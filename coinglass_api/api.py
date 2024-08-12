@@ -25,7 +25,7 @@ class CoinglassAPI(CoinglassParameterValidation):
         super().__init__()
 
         self.__coinglass_secret = coinglass_secret
-        self._base_url = "https://open-api.coinglass.com/public/v2/"
+        self._base_url = "https://open-api-v3.coinglass.com/api/futures/"
         self._session = requests.Session()
 
     def _get(self, endpoint: str, params: dict | None = None) -> dict:
@@ -34,7 +34,7 @@ class CoinglassAPI(CoinglassParameterValidation):
 
         headers = {
             "accept": "application/json",
-            "coinglassSecret": self.__coinglass_secret
+            "CG-API-KEY": self.__coinglass_secret
         }
         url = self._base_url + endpoint
         return self._session.request(
@@ -234,11 +234,173 @@ class CoinglassAPI(CoinglassParameterValidation):
         self._check_for_errors(response)
         data = response["data"]
         return data
+# Cem Started from here:
+## OPEN INTEREST
+    """OHLC History
+    get
+    https://open-api-v3.coinglass.com/api/futures/openInterest/ohlc-history
+    This API presents open interest data through OHLC (Open, High, Low, Close) candlestick charts.
 
+    Recent Requests
+    time	status	user agent	
+    Make a request to see history.
+    0 Requests This Month
+
+    Response Data
+    JSON
+
+    {
+    "code": "0",
+    "msg": "success",
+    "data": [
+        { 
+        "t": 1636588800,
+        "o": "57158.76",
+        "h": "57158.76",
+        "l": "54806.62",
+        "c": "54806.62"
+        },
+        ...
+    ]
+    }
+    Field	Description
+    o	Open
+    h	High
+    l	Low
+    c	Close
+    t	Time ，in seconds
+    Query Params
+    exchange
+    string
+    required
+    Defaults to Binance
+    Exchange name eg. Binance ，OKX （ Check supported exchanges through the 'support-exchange-pair' API.）
+
+    Binance
+    symbol
+    string
+    required
+    Defaults to BTCUSDT
+    Trading pair eg. BTCUSDT （ Check supported pair through the 'support-exchange-pair' API.）
+
+    BTCUSDT
+    interval
+    string
+    required
+    Defaults to 1d
+    1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w
+
+    1d
+    limit
+    int32
+    Default 1000, Max 4500
+
+    startTime
+    int64
+    in seconds eg.1641522717
+
+    endTime
+    int64
+    in seconds eg.1641522717
+
+    Responses
+
+    200
+    200
+
+
+    400
+    400
+
+    """
+    def open_interest_ohlc_history(
+            self,
+            exchange: str,
+            symbol: str,
+            interval: str,
+            limit: int = 1000,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        response = self._get(
+            endpoint="openInterest/ohlc-history",
+            params={"exchange": exchange, "symbol": symbol, "interval": interval,
+                    "limit": limit, "startTime": start_time, "endTime": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t")
+    
+    """
     def open_interest(self, symbol: str) -> pd.DataFrame:
         response = self._get(
             endpoint="open_interest",
             params={"symbol": symbol}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+    """
+    """ new URL: https://open-api-v3.coinglass.com/api/futures/openInterest/exchange-list
+    Response Data:
+    
+    {
+        "code": "0",
+        "msg": "success",
+        "data": [
+            {
+            "exchange": "All",
+            "symbol": "BTC",
+            "openInterest": 27471518651.5294,
+            "openInterestAmount": 492269.553,
+            "openInterestByCoinMargin": 6210860600.04,
+            "openInterestByStableCoinMargin": 21260658051.49,
+            "openInterestAmountByCoinMargin": 110748.4703,
+            "openInterestAmountByStableCoinMargin": 381521.0827,
+            "openInterestChangePercent15m": -0.29,
+            "openInterestChangePercent30m": -0.32,
+            "openInterestChangePercent1h": 0.27,
+            "openInterestChangePercent4h": 0.49,
+            "openInterestChangePercent24h": 2.18
+            },
+            ...
+        ]
+    }
+    
+    exchange	Exchange name eg: Binance
+    symbol	Symbol of the coin
+    openInterest	Open interest in USD
+    openInterestAmount	Open interest in COIN
+    openInterestByCoinMargin	Open interest by coin margin in USD
+    openInterestByStableCoinMargin	Open interest by stable coin margin in USD
+    openInterestAmountByCoinMargin	Open interest by coin margin in COIN
+    openInterestAmountByStableCoinMargin	Open interest by stable coin margin in COIN
+    openInterestChangePercent15m	Open interest change percentage in the last 15 minutes
+    openInterestChangePercent30m	Open interest change percentage in the last 30 minutes
+    openInterestChangePercent1h	Open interest change percentage in the last 1 hours
+    openInterestChangePercent4h	Open interest change percentage in the last 4 hours
+    openInterestChangePercent24h	Open interest change percentage in the last 24 hours
+    """
+    # v3
+    def open_interest_exchange_list(self, symbol: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="openInterest/exchange-list",
+            params={"symbol": symbol}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+    """Exchange History Chart
+        get
+        https://open-api-v3.coinglass.com/api/futures/openInterest/exchange-history-chart
+        This API retrieves historical open interest data for a cryptocurrency from exchanges, and the data is formatted for chart presentation.
+       
+    """
+    # v3 
+    def open_interest_exchange_history_chart(self, symbol: str, range: str, unit: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="openInterest/exchange-history-chart",
+            params={"symbol": symbol, "range": range, "unit": unit}
         )
         self._check_for_errors(response)
         data = response["data"]
