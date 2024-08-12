@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 import matplotlib.pyplot as plt
@@ -9,10 +10,7 @@ import sys
 from coinglass_api.api import CoinglassAPI, CoinglassAPIError, CoinglassRequestError, RateLimitExceededError
 
 
-def load_config():
-    with open('config.json', 'r') as config_file:
-        return json.load(config_file)
-    
+  
 
 """
 def get_coinglass_data(url, api_key, symbol="BTC"):
@@ -85,17 +83,41 @@ def main():
         plt.close()  # Close the plot to free up memory
 
 """
+# Remove the load_config function and replace it with this:
+def get_api_key():
+    return os.environ['COINGLASS_API_KEY']
+
 def main():
-    config = load_config()
-    cg_api = CoinglassAPI(config['coinglass_apikey'])
+    api_key = get_api_key()
+    cg_api = CoinglassAPI(api_key)
     try:
-        # Fetch and print the supported coins
-        supported_coins_df = cg_api.supported_coins()
-        print(supported_coins_df)
+        # # Fetch and print the supported coins
+        # supported_coins_df = cg_api.supported_coins()
+        # print(supported_coins_df)
         
-        # Fetch and print the supported exchanges and pairs
-        supported_pairs_df = cg_api.supported_exchange_pairs()
-        print(supported_pairs_df)
+        # # Fetch and print the supported exchanges and pairs
+        # supported_pairs_df = cg_api.supported_exchange_pairs()
+        # print(supported_pairs_df)
+        
+        # # Fetch and print the OHLC history
+        # ohlc_df = cg_api.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=10)
+        # print(ohlc_df)
+        
+        # # Fetch and print the aggregated OHLC history
+        # ohlc_agg_df = cg_api.ohlc_aggregated_history(symbol="BTC", interval="1d", limit=10)
+        # print(ohlc_agg_df)
+        
+        # Fetch and print the aggregated stablecoin margin OHLC history
+        ohlc_agg_stablecoin_df = cg_api.ohlc_aggregated_stablecoin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=10)
+        print(ohlc_agg_stablecoin_df)
+        
+        # Fetch and print the aggregated coin margin OHLC history
+        ohlc_agg_coin_df = cg_api.ohlc_aggregated_coin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=10)
+        print(ohlc_agg_coin_df)
+        
+        # Fetch and print the open interest data from exchanges
+        exchange_list_df = cg_api.exchange_list(symbol="BTC")
+        print(exchange_list_df)
         
     except CoinglassRequestError as e:
         print(f"Request error: {e}")

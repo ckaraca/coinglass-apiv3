@@ -175,6 +175,7 @@ class CoinglassAPI(CoinglassParameterValidation):
         
         
 ## Cem Started from here:
+    """General Section"""
     def supported_coins(self) -> pd.DataFrame:
         """
         Fetch the list of supported coins and return as a DataFrame
@@ -198,6 +199,121 @@ class CoinglassAPI(CoinglassParameterValidation):
                     "quoteAsset": pair["quoteAsset"]
                 })
         return pd.DataFrame(pairs_data)
+    """Open Interest Section"""
+    def ohlc_history(self, exchange: str, symbol: str, interval: str, limit: int = 1000, startTime: Optional[int] = None, endTime: Optional[int] = None) -> pd.DataFrame:
+        """
+        Fetch OHLC history data.
+        Args:
+            exchange: Exchange name (e.g., Binance)
+            symbol: Trading pair (e.g., BTCUSDT)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            startTime: Start time in seconds
+            endTime: End time in seconds
+        Returns:
+            pandas DataFrame with OHLC data
+        """
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": startTime,
+            "endTime": endTime,
+        }
+        response = self._get(endpoint="openInterest/ohlc-history", params=params)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+
+    def ohlc_aggregated_history(self, symbol: str, interval: str, limit: int = 1000, startTime: Optional[int] = None, endTime: Optional[int] = None) -> pd.DataFrame:
+        """
+        Fetch aggregated OHLC history data.
+        Args:
+            symbol: Trading coin (e.g., BTC)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            startTime: Start time in seconds
+            endTime: End time in seconds
+        Returns:
+            pandas DataFrame with aggregated OHLC data
+        """
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": startTime,
+            "endTime": endTime,
+        }
+        response = self._get(endpoint="openInterest/ohlc-aggregated-history", params=params)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+    
+    def ohlc_aggregated_stablecoin_margin_history(self, exchanges: str, symbol: str, interval: str, limit: int = 1000, startTime: Optional[int] = None, endTime: Optional[int] = None) -> pd.DataFrame:
+        """
+        Fetch aggregated stablecoin margin OHLC history data.
+        Args:
+            exchanges: Comma separated string of exchange names (e.g., Binance)
+            symbol: Trading coin (e.g., BTC)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            startTime: Start time in seconds
+            endTime: End time in seconds
+        Returns:
+            pandas DataFrame with aggregated stablecoin margin OHLC data
+        """
+        params = {
+            "exchanges": exchanges,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": startTime,
+            "endTime": endTime,
+        }
+        response = self._get(endpoint="openInterest/ohlc-aggregated-stablecoin-margin-history", params=params)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+    
+    def ohlc_aggregated_coin_margin_history(self, exchanges: str, symbol: str, interval: str, limit: int = 1000, startTime: Optional[int] = None, endTime: Optional[int] = None) -> pd.DataFrame:
+        """
+        Fetch aggregated coin margin OHLC history data.
+        Args:
+            exchanges: Comma separated string of exchange names (e.g., Binance)
+            symbol: Trading coin (e.g., BTC)
+            interval: Time interval (e.g., 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            startTime: Start time in seconds
+            endTime: End time in seconds
+        Returns:
+            pandas DataFrame with aggregated coin margin OHLC data
+        """
+        params = {
+            "exchanges": exchanges,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": startTime,
+            "endTime": endTime,
+        }
+        response = self._get(endpoint="openInterest/ohlc-aggregated-coin-margin-history", params=params)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t", unit="s", cast_objects_to_numeric=True)
+    
+    def exchange_list(self, symbol: str) -> pd.DataFrame:
+        """
+        Fetch open interest data for a coin from exchanges.
+
+        Args:
+            symbol: Trading coin (e.g., BTC)
+
+        Returns:
+            pandas DataFrame with open interest data from exchanges
+        """
+        params = {
+            "symbol": symbol
+        }
+        response = self._get(endpoint="openInterest/exchange-list", params=params)
+        data = response["data"]
+        return self._create_dataframe(data, cast_objects_to_numeric=True)
 
 ## Cem Ended here
     def perpetual_market(self, symbol: str) -> pd.DataFrame:
