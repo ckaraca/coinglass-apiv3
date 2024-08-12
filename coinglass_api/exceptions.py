@@ -1,3 +1,5 @@
+# content of your exceptions.py file 
+
 class CoinglassAPIError(Exception):
     """ Generic exception for API communication """
 
@@ -24,7 +26,7 @@ class RateLimitExceededError(CoinglassRequestError):
     """ Raised when API rate limit is exceeded """
 
     def __init__(self):
-        super().__init__(code=50001, msg="")
+        super().__init__(code=50001, msg="Rate limit exceeded")
 
 
 class NoDataReturnedError(CoinglassRequestError):

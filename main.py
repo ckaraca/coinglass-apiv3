@@ -6,7 +6,7 @@ import seaborn as sns
 import numpy as np
 import sys
 
-from coinglass_api.api import CoinglassAPI
+from coinglass_api.api import CoinglassAPI, CoinglassAPIError, CoinglassRequestError, RateLimitExceededError
 
 
 def load_config():
@@ -86,32 +86,25 @@ def main():
 
 """
 def main():
+    config = load_config()
+    cg_api = CoinglassAPI(config['coinglass_apikey'])
     try:
-        config = load_config()
-        cg = CoinglassAPI(config['coinglass_apikey'])
-        cem = cg.open_interest_exchange_list(symbol="BTC")
-        print(cem.head())
-        print(cem.info())
-        print(cem.shape)
+        # Fetch and print the supported coins
+        supported_coins_df = cg_api.supported_coins()
+        print(supported_coins_df)
         
-        # cem1 = cg.open_interest_history("h1", symbol="BTC")
-        # print(cem1.head())
-        # print(cem1.info())
-        # print(cem1.shape)
+        # Fetch and print the supported exchanges and pairs
+        supported_pairs_df = cg_api.supported_exchange_pairs()
+        print(supported_pairs_df)
         
-        # get open interest history for the last 24 hours
-        cem2 = cg.open_interest_history("1d", symbol="BTC")
-        print(cem2.head())
-        print(cem2.info())
-        
-
+    except CoinglassRequestError as e:
+        print(f"Request error: {e}")
+    except RateLimitExceededError as e:
+        print("Rate limit exceeded. Please try again later.")
+    except CoinglassAPIError as e:
+        print(f"API error: {e}")
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        print("Exception details:")
-        print(sys.exc_info())
-
-    finally:
-        plt.close()  # Close the plot to free up memory
+        print(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
     main()

@@ -2,6 +2,7 @@ from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 from .exceptions import (
     CoinglassAPIError,
@@ -150,27 +151,55 @@ class CoinglassAPI(CoinglassParameterValidation):
     @staticmethod
     def _check_for_errors(response: dict) -> None:
         """ Check for errors in response """
-
-        # Handle case where unable to communicate with API
+        if not response:
+            raise CoinglassAPIError(
+                status=500,
+                err="Empty response received from the API"
+            )
         if "success" not in response:
             raise CoinglassAPIError(
-                status=response["status"],
-                err=response["error"]
+                status=response.get("status", 500),
+                err=response.get("msg", "Unknown error")
             )
-
         # Handle case where API response is unsuccessful
         if not response["success"]:
-            code, msg = int(response["code"]), response["msg"]
+            code, msg = int(response.get("code", 40001)), response.get("msg", "Unknown error")
             match code:
                 case 50001:
                     raise RateLimitExceededError()
                 case _:
                     raise CoinglassRequestError(code=code, msg=msg)
-
         # Handle case where API returns no data
         if "data" not in response:
             raise NoDataReturnedError()
+        
+        
+## Cem Started from here:
+    def supported_coins(self) -> pd.DataFrame:
+        """
+        Fetch the list of supported coins and return as a DataFrame
+        """
+        response = self._get(endpoint="supported-coins")
+        data = response["data"]
+        return pd.DataFrame(data, columns=["supported_coins"])
+    
+    def supported_exchange_pairs(self) -> pd.DataFrame:
+        """
+        Fetch the list of supported exchanges and trading pairs and return as a DataFrame
+        """
+        response = self._get(endpoint="supported-exchange-pairs")
+        pairs_data = []
+        for exchange, pairs in response["data"].items():
+            for pair in pairs:
+                pairs_data.append({
+                    "exchange": exchange,
+                    "instrumentId": pair["instrumentId"],
+                    "baseAsset": pair["baseAsset"],
+                    "quoteAsset": pair["quoteAsset"]
+                })
+        return pd.DataFrame(pairs_data)
 
+## Cem Ended here
     def perpetual_market(self, symbol: str) -> pd.DataFrame:
         response = self._get(
             endpoint="perpetual_market",
