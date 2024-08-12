@@ -13,7 +13,7 @@ from .exceptions import (
 from .parameters import CoinglassParameterValidation
 
 
-class CoinglassAPI(CoinglassParameterValidation):
+class CoinglassAPIv3(CoinglassParameterValidation):
     """ Unofficial Python client for Coinglass API """
 
     def __init__(self, coinglass_secret: str):
@@ -312,9 +312,89 @@ class CoinglassAPI(CoinglassParameterValidation):
             "symbol": symbol
         }
         response = self._get(endpoint="openInterest/exchange-list", params=params)
+        
+        print("Raw API response:", response)
+        print("Type of response:", type(response))
+        
+        if not isinstance(response, dict):
+            raise CoinglassAPIError(status=500, err=f"Expected dict response, got {type(response)}")
+        
+        if 'data' not in response:
+            raise CoinglassAPIError(status=500, err="No 'data' field in API response")
+        
         data = response["data"]
-        return self._create_dataframe(data, cast_objects_to_numeric=True)
+        
+        print("Data from API:", data)
+        print("Type of data:", type(data))
+        
+        if not isinstance(data, list):
+            raise CoinglassAPIError(status=500, err=f"Expected list, got {type(data)}")
+        
+        if len(data) == 0:
+            print("Warning: API returned an empty list")
+            return pd.DataFrame()  # Return an empty DataFrame
+        
+        print("First item in data:", data[0])
+        print("Type of first item:", type(data[0]))
+        
+        # Try to create DataFrame without specifying dtypes
+        try:
+            df = pd.DataFrame(data)
+            print("DataFrame created successfully")
+            print("DataFrame info:")
+            df.info()
+            return df
+        except Exception as e:
+            print(f"Error creating DataFrame: {e}")
+            print("Data causing the error:", data)
+            raise
+        
+    def exchange_history_chart(
+        self,
+        symbol: str = "BTC",
+        range: str = "12h",
+        unit: str = "USD"
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical open interest data for a cryptocurrency from exchanges.
 
+        Args:
+            symbol (str): Trading coin (e.g., BTC). Defaults to "BTC".
+            range (str): Time range for data. Options: "all", "1m", "15m", "4h", "12h". Defaults to "12h".
+            unit (str): Unit for returned data. Options: "USD" or "COIN". Defaults to "USD".
+
+        Returns:
+            pd.DataFrame: DataFrame containing historical open interest data.
+        """
+        endpoint = "openInterest/exchange-history-chart"
+        params = {
+            "symbol": symbol,
+            "range": range,
+            "unit": unit
+        }
+
+        # Validate parameters
+        self.validate_params(params)
+
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+
+        if "data" in response:
+            data = response["data"]
+            df = pd.DataFrame({
+                "timestamp": pd.to_datetime(data["timeList"], unit="ms"),
+                "price": data["priceList"]
+            })
+
+            for exchange, values in data["dataMap"].items():
+                df[exchange] = values
+
+            df.set_index("timestamp", inplace=True)
+            return df
+        else:
+            raise NoDataReturnedError()
+##
+##    
 ## Cem Ended here
     def perpetual_market(self, symbol: str) -> pd.DataFrame:
         response = self._get(

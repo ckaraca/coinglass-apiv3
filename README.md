@@ -1,110 +1,56 @@
-# Coinglass API
+# Coinglass API v3
 
-[![PyPi version](https://img.shields.io/pypi/v/coinglass-api)](https://pypi.python.org/pypi/coinglass-api/)
-[![Downloads](https://static.pepy.tech/badge/coinglass-api)](https://pepy.tech/project/coinglass-api)
 [![Python 3.10](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
-[![codecov](https://codecov.io/gh/dineshpinto/coinglass-api/branch/main/graph/badge.svg?token=XTJRRU2W1T)](https://codecov.io/gh/dineshpinto/coinglass-api)
-[![API unittest](https://github.com/dineshpinto/coinglass-api/actions/workflows/api_unitests.yml/badge.svg)](https://github.com/dineshpinto/coinglass-api/actions/workflows/api_unitests.yml)
 
-## Unofficial Python client for Coinglass API
+## Unofficial Python client for Coinglass API v3
 
-Wrapper around the [Coinglass API](https://coinglass.com/pricing) to fetch data about crypto derivatives.
-All data is output in pandas DataFrames (single or multi-index) and all time-series data uses a `DateTimeIndex`.
-Supports all Coinglass API endpoints.
+This project is a fork of the original [Coinglass API wrapper](https://github.com/dineshpinto/coinglass-api) by Dinesh Pinto, updated to support Coinglass API v3.
 
-![Example Plot](https://github.com/dineshpinto/coinglass-api/blob/main/examples/example_plot.jpg?raw=true)
+This wrapper fetches data about crypto derivatives from the [Coinglass API v3](https://coinglass.com/pricing). All data is output in pandas DataFrames (single or multi-index) and all time-series data uses a `DateTimeIndex`. It supports all Coinglass API v3 endpoints.
 
 ## Installation
 
+Currently, this project is not available via pip. To use it, clone this repository:
+
 ```bash
-pip install coinglass-api
-```
+git clone https://github.com/your-username/coinglass-api-v3.git
+cd coinglass-api-v3
 
 ## Usage
 
-```python
-from coinglass_api import CoinglassAPI
+from coinglass_api import CoinglassAPIv3
 
-cg = CoinglassAPI(coinglass_secret="abcd1234")
+cg = CoinglassAPIv3(api_key="your_api_key_here")
 
-# Get perpetual markets for BTC
-perp_markets_btc = cg.perpetual_market(symbol="BTC")
+# Get supported coins
+supported_coins = cg.supported_coins()
 
-# Get OI history
-oi_history_btc = cg.open_interest_history(symbol="BTC", time_type="h1", currency="USD")
+# Get supported exchanges and pairs
+supported_pairs = cg.supported_exchange_pairs()
 
-# Funding rate of ETH on dYdX
-fr_btc_dydx = cg.funding(ex="dYdX", pair="ETH-USD", interval="h8")
+# Get OHLC history for BTC/USDT on Binance
+ohlc_history = cg.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=10)
 
-# Get average funding for BTC
-fr_avg_btc = cg.funding_average(symbol="BTC", interval="h4")
+# Get aggregated OHLC history for BTC
+ohlc_agg_history = cg.ohlc_aggregated_history(symbol="BTC", interval="1d", limit=10)
 
-# Get funding OHLC for ETH-USDT on Binance
-fr_ohlc_eth_binance = cg.funding_ohlc(ex="Binance", pair="ETHUSDT", interval="h4")
+# Get aggregated stablecoin margin OHLC history for BTC
+ohlc_agg_stablecoin = cg.ohlc_aggregated_stablecoin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=10)
 
-# Get aggregated OI OHLC data for BTC
-oi_agg_eth = cg.open_interest_aggregated_ohlc(symbol="ETH", interval="h4")
+# Get aggregated coin margin OHLC history for BTC
+ohlc_agg_coin = cg.ohlc_aggregated_coin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=10)
 
-# Get OHLC liquidations data for ETH-USD on dYdX
-liq_ohlc_eth_dydx = cg.liquidation_pair(ex="dYdX", pair="ETH-USD", interval="h4")
+# Get open interest data from exchanges for BTC
+exchange_list = cg.exchange_list(symbol="BTC")
 
-# Get liquidation data for BTC
-liq_btc = cg.liquidation_symbol(symbol="BTC", interval="h4")
-
-# Get long/short ratios for BTC
-lsr_btc = cg.long_short_symbol(symbol="BTC", interval="h4")
-
-# Get GBTC market history
-gbtc_history = cg.grayscale_market_history()
+# Get exchange history chart for BTC
+exchange_history = cg.exchange_history_chart(symbol="BTC", range="4h", unit="USD")
 
 # and more...
-```
 
 ## Examples
+>>> cg.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=5).head()
 
-```
->>> cg.funding(ex="dYdX", pair="ETH-USD", interval="h8").head()
-```
-
-| <br/>time           | exchangeName<br/> | symbol<br/> | quoteCurrency<br/> | fundingRate<br/> |
-|:--------------------|:------------------|:------------|:-------------------|:-----------------|
-| 2022-08-22 08:00:00 | dYdX              | ETH         | USD                | -0.001151        |
-| 2022-08-22 16:00:00 | dYdX              | ETH         | USD                | 0.001678         |
-| 2022-08-23 00:00:00 | dYdX              | ETH         | USD                | 0.003743         |
-| 2022-08-23 08:00:00 | dYdX              | ETH         | USD                | 0.003561         |
-| 2022-08-23 16:00:00 | dYdX              | ETH         | USD                | 0.000658         |
-
-```
->>> cg.funding(ex="dYdX", pair="ETH-USD", interval="h8").info()
-```
-
-```
-<class 'pandas.core.frame.DataFrame'>
-DatetimeIndex: 500 entries, 2022-08-22 08:00:00 to 2023-02-04 16:00:00
-Data columns (total 4 columns):
- #   Column         Non-Null Count  Dtype  
----  ------         --------------  -----  
- 0   exchangeName   500 non-null    object 
- 1   symbol         500 non-null    object 
- 2   quoteCurrency  500 non-null    object 
- 3   fundingRate    500 non-null    float64
-dtypes: float64(1), object(3)
-memory usage: 19.5+ KB
-```
-
-```
->>> cg.funding(ex="dYdX", pair="ETH-USD", interval="h8").plot(y="fundingRate")
-```
-
-![funding_rate](https://github.com/dineshpinto/coinglass-api/blob/main/examples/funding_rate.jpg?raw=true)
-
-## Disclaimer
-
-This project is for educational purposes only. You should not construe any such information or other material as legal,
-tax, investment, financial, or other advice. Nothing contained here constitutes a solicitation, recommendation,
-endorsement, or offer by me or any third party service provider to buy or sell any securities or other financial
-instruments in this or in any other jurisdiction in which such solicitation or offer would be unlawful under the
-securities laws of such jurisdiction.
-
-Under no circumstances will I be held responsible or liable in any way for any claims, damages, losses, expenses, costs,
-or liabilities whatsoever, including, without limitation, any direct or indirect damages for loss of profits.
+Disclaimer
+This project is for educational purposes only. You should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained here constitutes a solicitation, recommendation, endorsement, or offer by me or any third party service provider to buy or sell any securities or other financial instruments in this or in any other jurisdiction in which such solicitation or offer would be unlawful under the securities laws of such jurisdiction.
+Under no circumstances will I be held responsible or liable in any way for any claims, damages, losses, expenses, costs, or liabilities whatsoever, including, without limitation, any direct or indirect damages for loss of profits.

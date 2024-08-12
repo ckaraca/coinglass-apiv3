@@ -1,4 +1,4 @@
-from .api import CoinglassAPI
+from .api import CoinglassAPIv3
 from .exceptions import (
     CoinglassAPIError,
     CoinglassParameterWarning,
