@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -9,9 +10,13 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, LogNorm
 import numpy as np
+import mplfinance as mpf
+from matplotlib.colors import LinearSegmentedColormap, LogNorm
+import matplotlib.ticker as ticker
 
 from coinglass_api.api import CoinglassAPIv3, CoinglassAPIError, CoinglassRequestError, RateLimitExceededError
-
+from matplotlib.gridspec import GridSpec
+from matplotlib.collections import LineCollection
 
   
 
@@ -174,6 +179,257 @@ def plot_liquidation_heatmap(data, title, filename):
     plt.savefig(f"images/{filename}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
+
+def plot_long_short_ratio(df, title, filename):
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(data=df, x=df.index, y='longAccount', label='Long Account')
+    sns.lineplot(data=df, x=df.index, y='shortAccount', label='Short Account')
+    plt.title(title)
+    plt.xlabel("Date")
+    plt.ylabel("Account Percentage")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(data=df, x=df.index, y='longShortRatio')
+    plt.title(f"{title} - Long/Short Ratio")
+    plt.xlabel("Date")
+    plt.ylabel("Long/Short Ratio")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_ratio.png")
+    plt.close()    
+
+def plot_long_short_ratio(global_df, top_df, title, filename):
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12), sharex=True)
+
+    # Global Account Ratio
+    sns.lineplot(data=global_df, x=global_df.index, y='longAccount', label='Long Account', ax=ax1)
+    sns.lineplot(data=global_df, x=global_df.index, y='shortAccount', label='Short Account', ax=ax1)
+    ax1.set_title(f"{title} - Global Account Ratio")
+    ax1.set_ylabel("Account Percentage")
+    ax1.legend()
+
+    # Top Account Ratio
+    sns.lineplot(data=top_df, x=top_df.index, y='longAccount', label='Long Account', ax=ax2)
+    sns.lineplot(data=top_df, x=top_df.index, y='shortAccount', label='Short Account', ax=ax2)
+    ax2.set_title(f"{title} - Top Account Ratio")
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("Account Percentage")
+    ax2.legend()
+
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_accounts.png")
+    plt.close()
+
+    # Long/Short Ratio Comparison
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(data=global_df, x=global_df.index, y='longShortRatio', label='Global')
+    sns.lineplot(data=top_df, x=top_df.index, y='longShortRatio', label='Top Accounts')
+    plt.title(f"{title} - Long/Short Ratio Comparison")
+    plt.xlabel("Date")
+    plt.ylabel("Long/Short Ratio")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_ratio_comparison.png")
+    plt.close()
+    
+def plot_liquidation_heatmap_v2(heatmap_data, title, filename, range="3d"):
+    price_levels = heatmap_data['price_levels']
+    liquidations = heatmap_data['liquidations']
+    ohlc = heatmap_data['ohlc']
+    
+    print("OHLC head:")
+    print(ohlc.head())
+    print("\nOHLC dtypes:")
+    print(ohlc.dtypes)
+    
+    # Convert all columns to appropriate numeric types
+    for col in ['open', 'high', 'low', 'close', 'volume']:
+        ohlc[col] = pd.to_numeric(ohlc[col], errors='coerce')
+    
+    print("\nOHLC dtypes after conversion:")
+    print(ohlc.dtypes)
+    
+    # Ensure 'close' prices are numerical
+    close_prices = ohlc['close'].values
+    print("\nClose prices type:", type(close_prices))
+    print("Close prices shape:", close_prices.shape)
+    print("First few close prices:", close_prices[:5])
+    
+    # Create figure with GridSpec
+    fig = plt.figure(figsize=(16, 8))
+    gs = GridSpec(1, 20, figure=fig)
+    
+    # Create axes for colorbar and main plot
+    cbar_ax = fig.add_subplot(gs[0, 0])  # Leftmost column for colorbar
+    ax = fig.add_subplot(gs[0, 1:])  # Rest for the main plot
+    
+    # Create heatmap data
+    heatmap = np.zeros((len(price_levels), len(ohlc)))
+    for _, liq in liquidations.iterrows():
+        heatmap[int(liq['price_index'])][int(liq['time_index'])] = liq['liquidation_value']
+
+    # Set fixed vmax for 1y scale
+    vmax = 5.88e9 if range == "1y" else liquidations['liquidation_value'].max()
+    
+    # Plot heatmap
+    extent = [mdates.date2num(ohlc.index[0]), mdates.date2num(ohlc.index[-1]), 
+              price_levels['price'].min(), price_levels['price'].max()]
+    
+    colors = ['#3a0ca3', '#4361ee', '#4cc9f0', '#7bf1a8', '#ccff33']
+    cmap = LinearSegmentedColormap.from_list('custom', colors, N=256)
+    norm = LogNorm(vmin=1e4, vmax=vmax)
+    im = ax.imshow(heatmap, aspect='auto', extent=extent, origin='lower', 
+                   cmap=cmap, norm=norm, interpolation='nearest')
+
+    # Customize y-axis (price)
+    ax.set_ylabel('Bitcoin Price (USDT)', fontsize=12)
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:,.0f}"))
+
+    # Customize x-axis (date)
+    ax.set_xlabel('Date', fontsize=12)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+
+    # Add colorbar on the far left
+    cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical', pad=0.05)
+    cbar.set_label('Liquidation Value', fontsize=12, labelpad=15)
+    cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:.2e}"))
+    cbar.ax.yaxis.set_label_position('left')
+    cbar.ax.yaxis.tick_left()
+
+    # Set title
+    ax.set_title(title, fontsize=16, pad=20)
+
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_{range}.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+    
+def plot_liquidation_heatmap_v2(heatmap_data, title, filename, range="3d"):
+    price_levels = heatmap_data['price_levels']
+    liquidations = heatmap_data['liquidations']
+    ohlc = heatmap_data['ohlc']
+    
+    # Create figure with GridSpec
+    fig = plt.figure(figsize=(16, 8))
+    gs = GridSpec(1, 20, figure=fig)
+    
+    # Create axes for colorbar and main plot
+    cbar_ax = fig.add_subplot(gs[0, 0])  # Leftmost column for colorbar
+    ax = fig.add_subplot(gs[0, 1:])  # Rest for the main plot
+    
+    # Create heatmap data
+    heatmap = np.zeros((len(price_levels), len(ohlc)))
+    for _, liq in liquidations.iterrows():
+        heatmap[int(liq['price_index'])][int(liq['time_index'])] = liq['liquidation_value']
+
+    # Set fixed vmax for 1y scale
+    vmax = 5.88e9 if range == "1y" else liquidations['liquidation_value'].max()
+    
+    # Plot heatmap
+    extent = [mdates.date2num(ohlc.index[0]), mdates.date2num(ohlc.index[-1]), 
+              price_levels['price'].min(), price_levels['price'].max()]
+    
+    colors = ['#3a0ca3', '#4361ee', '#4cc9f0', '#7bf1a8', '#ccff33']
+    cmap = LinearSegmentedColormap.from_list('custom', colors, N=256)
+    norm = LogNorm(vmin=1e4, vmax=vmax)
+    im = ax.imshow(heatmap, aspect='auto', extent=extent, origin='lower', 
+                   cmap=cmap, norm=norm, interpolation='nearest')
+
+   
+    
+    # Customize y-axis (price)
+    ax.set_ylabel('Bitcoin Price (USDT)', fontsize=12)
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:,.0f}"))
+
+    # Customize x-axis (date)
+    ax.set_xlabel('Date', fontsize=12)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+
+    # Add colorbar on the far left
+    cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
+    cbar.set_label('Liquidation Value', fontsize=12, labelpad=15)
+    cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:.2e}"))
+    cbar.ax.yaxis.set_label_position('left')
+    cbar.ax.yaxis.tick_left()
+
+    # Set title
+    ax.set_title(title, fontsize=16, pad=20)
+
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_{range}.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    price_levels = heatmap_data['price_levels']
+    liquidations = heatmap_data['liquidations']
+    ohlc = heatmap_data['ohlc']
+    
+    # Create figure and axis objects
+    fig, ax = plt.subplots(figsize=(15, 8))
+    
+    # Create heatmap data
+    heatmap = np.zeros((len(price_levels), len(ohlc)))
+    for _, liq in liquidations.iterrows():
+        heatmap[int(liq['price_index'])][int(liq['time_index'])] = liq['liquidation_value']
+
+    # Plot heatmap
+    extent = [mdates.date2num(ohlc.index[0]), mdates.date2num(ohlc.index[-1]), 
+            0, len(price_levels) - 1]
+    
+    colors = ['#3a0ca3', '#4361ee', '#4cc9f0', '#7bf1a8', '#ccff33']
+    cmap = LinearSegmentedColormap.from_list('custom', colors, N=100)
+    im = ax.imshow(heatmap, aspect='auto', extent=extent, origin='lower', 
+                cmap=cmap, interpolation='nearest')
+
+    # Set y-axis to show Bitcoin prices
+    price_ticks = np.linspace(0, len(price_levels) - 1, num=10, dtype=int)
+    ax.set_yticks(price_ticks)
+    ax.set_yticklabels([f"{price_levels['price'][i]:,.0f}" for i in price_ticks])
+
+    # Plot OHLC data
+    ax_price = ax.twinx()
+    ax_price.plot(ohlc.index, ohlc['close'], color='black', alpha=0.75, linewidth=1)
+    ax_price.fill_between(ohlc.index, ohlc['low'], ohlc['high'], color='gray', alpha=0.2)
+    ax_price.set_ylim(price_levels['price'].min(), price_levels['price'].max())
+    ax_price.set_ylabel('Bitcoin Price (USDT)', fontsize=12)
+
+     # Create a color array based on price changes
+    colors = ['green']
+    close_prices = ohlc['close'].values
+    dates = mdates.date2num(ohlc.index)
+    points = np.array([dates, close_prices]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    lc = LineCollection(segments, colors=colors, linewidth=1.5, alpha=0.8)
+    ax_price.add_collection(lc)
+    
+    
+    # Customize subplot
+    ax.set_title(title, fontsize=16)
+    ax.set_ylabel('Bitcoin Price (USDT)', fontsize=12)
+
+    # Customize x-axis
+    ax.set_xlabel('Date', fontsize=12)
+    plt.xticks(rotation=45)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+
+    ## Add colorbar
+    #cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.01)
+    #cbar.set_label('Liquidation Value', fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_{range}.png", dpi=300, bbox_inches='tight')
+    plt.close()
     
 def main():
     api_key = get_api_key()
@@ -510,25 +766,144 @@ def main():
     #         print("\nPercentage of liquidations by exchange:")
     #         print(exchange_data[['exchange', 'liquidation_percentage']].sort_values('liquidation_percentage', ascending=False))
     
-    # Liquidation Aggregated Heatmap Model2
-        liq_heatmap_data = cg_api.liquidation_aggregated_heatmap_model2(symbol="BTC", range="3d")
-        print("\nLiquidation Aggregated Heatmap Data (BTC, 3d):")
-        print(json.dumps(liq_heatmap_data, indent=2))
+    # # Liquidation Aggregated Heatmap Model2
+    #     liq_heatmap_data = cg_api.liquidation_aggregated_heatmap_model2(symbol="BTC", range="3d")
+    #     print("\nLiquidation Aggregated Heatmap Data (BTC, 3d):")
+    #     print(json.dumps(liq_heatmap_data, indent=2))
 
-        # Plot Liquidation Heatmap
-        plot_liquidation_heatmap(liq_heatmap_data, "BTC Liquidation Heatmap (3d)", "btc_liquidation_heatmap")
+    #     # Plot Liquidation Heatmap
+    #     plot_liquidation_heatmap(liq_heatmap_data, "BTC Liquidation Heatmap (3d)", "btc_liquidation_heatmap_aggregated")
         
 
-        # Additional analysis
-        total_liquidation = sum(value for _, _, value in liq_heatmap_data['liq'])
-        print(f"\nTotal potential liquidation value: ${total_liquidation:,.2f}")
+    #     # Additional analysis
+    #     total_liquidation = sum(value for _, _, value in liq_heatmap_data['liq'])
+    #     print(f"\nTotal potential liquidation value: ${total_liquidation:,.2f}")
 
-        # Find the price level with the highest liquidation value
-        max_liq = max(liq_heatmap_data['liq'], key=lambda x: x[2])
-        max_liq_price = liq_heatmap_data['y'][max_liq[1]]
-        print(f"Price level with highest liquidation value: ${max_liq_price:,.2f}")
-        print(f"Highest liquidation value: ${max_liq[2]:,.2f}")
+    #     # Find the price level with the highest liquidation value
+    #     max_liq = max(liq_heatmap_data['liq'], key=lambda x: x[2])
+    #     max_liq_price = liq_heatmap_data['y'][max_liq[1]]
+    #     print(f"Price level with highest liquidation value: ${max_liq_price:,.2f}")
+    #     print(f"Highest liquidation value: ${max_liq[2]:,.2f}")
+    
+    # # Liquidation Heatmap Model2
+    #     liq_heatmap_data = cg_api.liquidation_heatmap_model2(exchange="Binance", symbol="BTCUSDT", range="3d")
+    #     print("\nLiquidation Heatmap Data (BTCUSDT, 3d):")
+    #     print(json.dumps(liq_heatmap_data, indent=2))
 
+    #     # Plot Liquidation Heatmap
+    #     plot_liquidation_heatmap2(liq_heatmap_data, "BTCUSDT Liquidation Heatmap (3d)", "btc_liquidation_heatmap")
+
+    #     # Additional analysis
+    #     total_liquidation = sum(value for _, _, value in liq_heatmap_data['liq'])
+    #     print(f"\nTotal potential liquidation value: ${total_liquidation:,.2f}")
+
+    #     # Find the price level with the highest liquidation value
+    #     max_liq = max(liq_heatmap_data['liq'], key=lambda x: x[2])
+    #     max_liq_price = liq_heatmap_data['y'][max_liq[1]]
+    #     print(f"Price level with highest liquidation value: ${max_liq_price:,.2f}")
+    #     print(f"Highest liquidation value: ${max_liq[2]:,.2f}")
+    
+         # Liquidation Heatmap Model2
+        liq_heatmap_data = cg_api.liquidation_heatmap_model2(exchange="Binance", symbol="BTCUSDT", range="1y")
+        print("\nLiquidation Heatmap Data (BTCUSDT, 1y):")
+        for key, df in liq_heatmap_data.items():
+            print(f"\n{key.capitalize()} DataFrame:")
+            print(df.head())
+
+        # Plot Liquidation Heatmap
+        plot_liquidation_heatmap_v2(liq_heatmap_data, "BTCUSDT Liquidation Heatmap (1y)", "btc_liquidation_heatmap_v2", "1y")
+
+        # # Additional analysis
+        # total_liquidation = liq_heatmap_data['liquidations']['liquidation_value'].sum()
+        # print(f"\nTotal potential liquidation value: ${total_liquidation:,.2f}")
+
+        # # Find the price level with the highest liquidation value
+        # max_liq = liq_heatmap_data['liquidations'].loc[liq_heatmap_data['liquidations']['liquidation_value'].idxmax()]
+        # print(f"Price level with highest liquidation value: ${max_liq['price']:,.2f}")
+        # print(f"Highest liquidation value: ${max_liq['liquidation_value']:,.2f}")
+
+        # # Analyze liquidation distribution
+        # price_ranges = pd.cut(liq_heatmap_data['liquidations']['price'], bins=5)
+        # liq_distribution = liq_heatmap_data['liquidations'].groupby(price_ranges)['liquidation_value'].sum()
+        # print("\nLiquidation distribution across price ranges:")
+        # print(liq_distribution)
+
+    # # Global Long/Short Account Ratio
+    #     long_short_ratio_df = cg_api.global_long_short_account_ratio(
+    #         exchange="Binance",
+    #         symbol="BTCUSDT",
+    #         interval="1h",
+    #         limit=168  # Last 7 days of hourly data
+    #     )
+    #     print("\nGlobal Long/Short Account Ratio (BTCUSDT, last 7 days):")
+    #     print(long_short_ratio_df)
+
+    #     # Plot Long/Short Account Ratio
+    #     plot_long_short_ratio(long_short_ratio_df, "BTCUSDT Long/Short Account Ratio", "btc_long_short_ratio")
+
+    #     # Additional analysis
+    #     current_ratio = long_short_ratio_df.iloc[-1]
+    #     print(f"\nCurrent Long/Short Account Ratio:")
+    #     print(f"Long Account: {current_ratio['longAccount']:.2f}%")
+    #     print(f"Short Account: {current_ratio['shortAccount']:.2f}%")
+    #     print(f"Long/Short Ratio: {current_ratio['longShortRatio']:.3f}")
+
+    #     # Calculate average ratio over the period
+    #     avg_ratio = long_short_ratio_df['longShortRatio'].mean()
+    #     print(f"\nAverage Long/Short Ratio over the last 7 days: {avg_ratio:.3f}")
+
+    #     # Find highest and lowest ratios
+    #     max_ratio = long_short_ratio_df['longShortRatio'].max()
+    #     min_ratio = long_short_ratio_df['longShortRatio'].min()
+    #     print(f"Highest Long/Short Ratio: {max_ratio:.3f}")
+    #     print(f"Lowest Long/Short Ratio: {min_ratio:.3f}")
+    
+    # # Global Long/Short Account Ratio
+    #     global_long_short_ratio_df = cg_api.global_long_short_account_ratio(
+    #         exchange="Binance",
+    #         symbol="BTCUSDT",
+    #         interval="1h",
+    #         limit=168  # Last 7 days of hourly data
+    #     )
+    #     print("\nGlobal Long/Short Account Ratio (BTCUSDT, last 7 days):")
+    #     print(global_long_short_ratio_df)
+
+    #     # Top Accounts Long/Short Ratio
+    #     top_long_short_ratio_df = cg_api.top_long_short_account_ratio(
+    #         exchange="Binance",
+    #         symbol="BTCUSDT",
+    #         interval="1h",
+    #         limit=168  # Last 7 days of hourly data
+    #     )
+    #     print("\nTop Accounts Long/Short Ratio (BTCUSDT, last 7 days):")
+    #     print(top_long_short_ratio_df)
+
+    #     # Plot Long/Short Account Ratio
+    #     plot_long_short_ratio(global_long_short_ratio_df, top_long_short_ratio_df, 
+    #                           "BTCUSDT Long/Short Account Ratio", "btc_long_short_ratio")
+
+    #     # Additional analysis
+    #     for df_name, df in [("Global", global_long_short_ratio_df), ("Top Accounts", top_long_short_ratio_df)]:
+    #         current_ratio = df.iloc[-1]
+    #         print(f"\nCurrent {df_name} Long/Short Account Ratio:")
+    #         print(f"Long Account: {current_ratio['longAccount']:.2f}%")
+    #         print(f"Short Account: {current_ratio['shortAccount']:.2f}%")
+    #         print(f"Long/Short Ratio: {current_ratio['longShortRatio']:.3f}")
+
+    #         # Calculate average ratio over the period
+    #         avg_ratio = df['longShortRatio'].mean()
+    #         print(f"\nAverage {df_name} Long/Short Ratio over the last 7 days: {avg_ratio:.3f}")
+
+    #         # Find highest and lowest ratios
+    #         max_ratio = df['longShortRatio'].max()
+    #         min_ratio = df['longShortRatio'].min()
+    #         print(f"Highest {df_name} Long/Short Ratio: {max_ratio:.3f}")
+    #         print(f"Lowest {df_name} Long/Short Ratio: {min_ratio:.3f}")
+
+    #     # Compare global and top account ratios
+    #     correlation = global_long_short_ratio_df['longShortRatio'].corr(top_long_short_ratio_df['longShortRatio'])
+    #     print(f"\nCorrelation between Global and Top Accounts Long/Short Ratios: {correlation:.3f}")
+            
     except CoinglassRequestError as e:
         print(f"Request error: {e}")
     except RateLimitExceededError as e:

@@ -11,7 +11,7 @@ class CoinglassParameterValidation:
         ]
 
         self._time_types: list[str] = [
-            'h1', 'h2', 'h4', 'h6', 'h8', 'h12', 'h24', 'm1', 'm3', 'm5', 'm15', 'm30',
+            '1h', 'h2', 'h4', 'h6', 'h8', 'h12', 'h24', 'm1', 'm3', 'm5', 'm15', 'm30',
             '1d', '7d'
         ]
         

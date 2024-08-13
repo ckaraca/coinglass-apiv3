@@ -664,7 +664,201 @@ class CoinglassAPIv3(CoinglassParameterValidation):
         self._check_for_errors(response)
         return response["data"]
 
+    #   previous iteration of the function 
+    # def liquidation_heatmap_model2(self, exchange: str = "Binance", symbol: str = "BTCUSDT", range: str = "3d") -> dict:
+    #     """
+    #     Fetch liquidation levels data for heatmap visualization.
 
+    #     Args:
+    #         exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+    #         symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+    #         range: Time range for data. Options: "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y". Defaults to "3d".
+
+    #     Returns:
+    #         dict: Contains 'y' (price list), 'liq' (liquidation data), and 'prices' (OHLC data)
+    #     """
+    #     endpoint = "liquidation/model2/heatmap"
+    #     params = {"exchange": exchange, "symbol": symbol, "range": range}
+    #     response = self._get(endpoint, params=params)
+    #     self._check_for_errors(response)
+    #     return response["data"]
+    
+    def liquidation_heatmap_model2(self, exchange: str = "Binance", symbol: str = "BTCUSDT", range: str = "3d") -> dict:
+        """
+        Fetch liquidation levels data for heatmap visualization.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            range: Time range for data. Options: "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y". Defaults to "3d".
+
+        Returns:
+            dict: Contains 'price_levels' (DataFrame), 'liquidations' (DataFrame), and 'ohlc' (DataFrame)
+        """
+        endpoint = "liquidation/model2/heatmap"
+        params = {"exchange": exchange, "symbol": symbol, "range": range}
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+
+        # Create DataFrame for price levels
+        price_levels = pd.DataFrame({'price': data['y']})
+
+        # Create DataFrame for liquidation data
+        liquidations = pd.DataFrame(data['liq'], columns=['time_index', 'price_index', 'liquidation_value'])
+        liquidations['price'] = liquidations['price_index'].map(lambda x: data['y'][x])
+
+        # Create DataFrame for OHLC data
+        ohlc = pd.DataFrame(data['prices'], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        ohlc['timestamp'] = pd.to_datetime(ohlc['timestamp'], unit='s')
+        ohlc.set_index('timestamp', inplace=True)
+        
+        # Convert time_index to datetime
+        liquidations['time'] = pd.to_datetime(liquidations['time_index'], unit='s')
+        
+        # Merge liquidations with OHLC data
+        power_bi_data = pd.merge_asof(liquidations.sort_values('time'), ohlc.reset_index(), left_on='time', right_on='timestamp', direction='nearest')
+        
+        # Add exchange and symbol columns
+        power_bi_data['exchange'] = exchange
+        power_bi_data['symbol'] = symbol
+        
+        # Export data to CSV for Power BI
+        #csv_filename = f"images/{exchange}_{symbol}_liquidation_heatmap_{range}.csv"
+        #power_bi_data.to_csv(csv_filename, index=False)
+        #print(f"Data exported to {csv_filename} for Power BI")
+
+        return {
+            'price_levels': price_levels,
+            'liquidations': liquidations,
+            'ohlc': ohlc
+        }
+        
+    def liquidation_heatmap_model2_old(self, exchange: str = "Binance", symbol: str = "BTCUSDT", range: str = "3d") -> dict:
+        """
+        Fetch liquidation levels data for heatmap visualization and export for Power BI.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            range: Time range for data. Options: "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y". Defaults to "3d".
+
+        Returns:
+            dict: Contains 'price_levels' (DataFrame), 'liquidations' (DataFrame), and 'ohlc' (DataFrame)
+        """
+        endpoint = "liquidation/model2/heatmap"
+        params = {"exchange": exchange, "symbol": symbol, "range": range}
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+
+        # Create DataFrame for price levels
+        price_levels = pd.DataFrame({'price': data['y']})
+
+        # Create DataFrame for liquidation data
+        liquidations = pd.DataFrame(data['liq'], columns=['time_index', 'price_index', 'liquidation_value'])
+        liquidations['price'] = liquidations['price_index'].map(lambda x: data['y'][x])
+
+        # Create DataFrame for OHLC data
+        ohlc = pd.DataFrame(data['prices'], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        ohlc['timestamp'] = pd.to_datetime(ohlc['timestamp'], unit='s')
+        ohlc.set_index('timestamp', inplace=True)
+
+        # Prepare data for Power BI
+        power_bi_data = liquidations.merge(ohlc, left_on='time_index', right_index=True, how='left')
+        power_bi_data['date'] = power_bi_data.index
+        power_bi_data['exchange'] = exchange
+        power_bi_data['symbol'] = symbol
+
+        # Export data to CSV for Power BI
+        csv_filename = f"images/{exchange}_{symbol}_liquidation_heatmap_{range}.csv"
+        power_bi_data.to_csv(csv_filename, index=False)
+        print(f"Data exported to {csv_filename} for Power BI")
+
+        return {
+            'price_levels': price_levels,
+            'liquidations': liquidations,
+            'ohlc': ohlc,
+            'power_bi_data': power_bi_data
+        }
+
+##    
+## Long Short Account Ratio Section
+##      
+    
+    def global_long_short_account_ratio(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "h1",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve the global long/short account ratio for trading pairs on an exchange.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with long/short account ratio data
+        """
+        endpoint = "globalLongShortAccountRatio/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def top_long_short_account_ratio(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "h1",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve the long/short ratio history for top accounts on an exchange.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with top accounts long/short ratio data
+        """
+        endpoint = "topLongShortAccountRatio/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
 ##
 ##    
 ## Cem Ended here
@@ -1229,37 +1423,37 @@ class CoinglassAPIv3(CoinglassParameterValidation):
         data = response["data"]
         return self._create_dataframe(data, time_col="t")
 
-    def top_long_short_account_ratio(
-            self,
-            ex: str,
-            pair: str,
-            interval: str,
-            limit: int = 500,
-            start_time: Optional[int] = None,
-            end_time: Optional[int] = None
-    ) -> pd.DataFrame:
-        """
-        Top accounts long/short ratio for an exchange pair
+    # def top_long_short_account_ratio(
+    #         self,
+    #         ex: str,
+    #         pair: str,
+    #         interval: str,
+    #         limit: int = 500,
+    #         start_time: Optional[int] = None,
+    #         end_time: Optional[int] = None
+    # ) -> pd.DataFrame:
+    #     """
+    #     Top accounts long/short ratio for an exchange pair
 
-        Args:
-            ex: exchange to get liquidation data for (e.g. Binance, dYdX, etc.)
-            pair: pair to get liquidation data (e.g. BTCUSDT on Binance,BTC-USD on dYdX)
-            interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
-            limit: number of data points to return (default: 500)
-            start_time: start time in milliseconds
-            end_time: end time in milliseconds
+    #     Args:
+    #         ex: exchange to get liquidation data for (e.g. Binance, dYdX, etc.)
+    #         pair: pair to get liquidation data (e.g. BTCUSDT on Binance,BTC-USD on dYdX)
+    #         interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
+    #         limit: number of data points to return (default: 500)
+    #         start_time: start time in milliseconds
+    #         end_time: end time in milliseconds
 
-        Returns:
-            pandas DataFrame with top accounts long/short ratio for an exchange pair
-        """
-        response = self._get(
-            endpoint="indicator/top_long_short_account_ratio",
-            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
-                    "start_time": start_time, "end_time": end_time}
-        )
-        self._check_for_errors(response)
-        data = response["data"]
-        return self._create_dataframe(data, time_col="createTime")
+    #     Returns:
+    #         pandas DataFrame with top accounts long/short ratio for an exchange pair
+    #     """
+    #     response = self._get(
+    #         endpoint="indicator/top_long_short_account_ratio",
+    #         params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+    #                 "start_time": start_time, "end_time": end_time}
+    #     )
+    #     self._check_for_errors(response)
+    #     data = response["data"]
+    #     return self._create_dataframe(data, time_col="createTime")
 
     def top_long_short_position_ratio(
             self,
