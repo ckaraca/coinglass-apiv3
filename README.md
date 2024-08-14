@@ -45,8 +45,6 @@ To use this project, follow these steps:
 
 ## Usage
 
-## Usage
-
 ```python
 from coinglass_api.api import CoinglassAPIv3
 
@@ -85,6 +83,14 @@ top_long_short_position_ratio = cg.top_long_short_position_ratio_history(exchang
 ```
 
 Each method returns a pandas DataFrame with the requested data. You can further process or analyze this data as needed for your specific use case.
+
+## Example Visualization
+
+Here's an example of a liquidation heatmap generated using this API wrapper:
+
+![BTC Liquidation Heatmap](images/btc_liquidation_heatmap_v2_1y.png)
+
+This heatmap visualizes the liquidation levels for Bitcoin over a one-year period, providing insights into potential price levels where significant liquidations might occur.
 
 ## Examples
 
