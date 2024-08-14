@@ -180,28 +180,28 @@ def plot_liquidation_heatmap(data, title, filename):
     plt.close()
 
 
-def plot_long_short_ratio(df, title, filename):
-    plt.figure(figsize=(12, 6))
-    sns.lineplot(data=df, x=df.index, y='longAccount', label='Long Account')
-    sns.lineplot(data=df, x=df.index, y='shortAccount', label='Short Account')
-    plt.title(title)
-    plt.xlabel("Date")
-    plt.ylabel("Account Percentage")
-    plt.legend()
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(f"images/{filename}.png")
-    plt.close()
+# def plot_long_short_ratio(df, title, filename):
+#     plt.figure(figsize=(12, 6))
+#     sns.lineplot(data=df, x=df.index, y='longAccount', label='Long Account')
+#     sns.lineplot(data=df, x=df.index, y='shortAccount', label='Short Account')
+#     plt.title(title)
+#     plt.xlabel("Date")
+#     plt.ylabel("Account Percentage")
+#     plt.legend()
+#     plt.xticks(rotation=45)
+#     plt.tight_layout()
+#     plt.savefig(f"images/{filename}.png")
+#     plt.close()
 
-    plt.figure(figsize=(12, 6))
-    sns.lineplot(data=df, x=df.index, y='longShortRatio')
-    plt.title(f"{title} - Long/Short Ratio")
-    plt.xlabel("Date")
-    plt.ylabel("Long/Short Ratio")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(f"images/{filename}_ratio.png")
-    plt.close()    
+#     plt.figure(figsize=(12, 6))
+#     sns.lineplot(data=df, x=df.index, y='longShortRatio')
+#     plt.title(f"{title} - Long/Short Ratio")
+#     plt.xlabel("Date")
+#     plt.ylabel("Long/Short Ratio")
+#     plt.xticks(rotation=45)
+#     plt.tight_layout()
+#     plt.savefig(f"images/{filename}_ratio.png")
+#     plt.close()    
 
 def plot_long_short_ratio(global_df, top_df, title, filename):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12), sharex=True)
@@ -239,78 +239,6 @@ def plot_long_short_ratio(global_df, top_df, title, filename):
     plt.savefig(f"images/{filename}_ratio_comparison.png")
     plt.close()
     
-def plot_liquidation_heatmap_v2(heatmap_data, title, filename, range="3d"):
-    price_levels = heatmap_data['price_levels']
-    liquidations = heatmap_data['liquidations']
-    ohlc = heatmap_data['ohlc']
-    
-    print("OHLC head:")
-    print(ohlc.head())
-    print("\nOHLC dtypes:")
-    print(ohlc.dtypes)
-    
-    # Convert all columns to appropriate numeric types
-    for col in ['open', 'high', 'low', 'close', 'volume']:
-        ohlc[col] = pd.to_numeric(ohlc[col], errors='coerce')
-    
-    print("\nOHLC dtypes after conversion:")
-    print(ohlc.dtypes)
-    
-    # Ensure 'close' prices are numerical
-    close_prices = ohlc['close'].values
-    print("\nClose prices type:", type(close_prices))
-    print("Close prices shape:", close_prices.shape)
-    print("First few close prices:", close_prices[:5])
-    
-    # Create figure with GridSpec
-    fig = plt.figure(figsize=(16, 8))
-    gs = GridSpec(1, 20, figure=fig)
-    
-    # Create axes for colorbar and main plot
-    cbar_ax = fig.add_subplot(gs[0, 0])  # Leftmost column for colorbar
-    ax = fig.add_subplot(gs[0, 1:])  # Rest for the main plot
-    
-    # Create heatmap data
-    heatmap = np.zeros((len(price_levels), len(ohlc)))
-    for _, liq in liquidations.iterrows():
-        heatmap[int(liq['price_index'])][int(liq['time_index'])] = liq['liquidation_value']
-
-    # Set fixed vmax for 1y scale
-    vmax = 5.88e9 if range == "1y" else liquidations['liquidation_value'].max()
-    
-    # Plot heatmap
-    extent = [mdates.date2num(ohlc.index[0]), mdates.date2num(ohlc.index[-1]), 
-              price_levels['price'].min(), price_levels['price'].max()]
-    
-    colors = ['#3a0ca3', '#4361ee', '#4cc9f0', '#7bf1a8', '#ccff33']
-    cmap = LinearSegmentedColormap.from_list('custom', colors, N=256)
-    norm = LogNorm(vmin=1e4, vmax=vmax)
-    im = ax.imshow(heatmap, aspect='auto', extent=extent, origin='lower', 
-                   cmap=cmap, norm=norm, interpolation='nearest')
-
-    # Customize y-axis (price)
-    ax.set_ylabel('Bitcoin Price (USDT)', fontsize=12)
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:,.0f}"))
-
-    # Customize x-axis (date)
-    ax.set_xlabel('Date', fontsize=12)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
-
-    # Add colorbar on the far left
-    cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical', pad=0.05)
-    cbar.set_label('Liquidation Value', fontsize=12, labelpad=15)
-    cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:.2e}"))
-    cbar.ax.yaxis.set_label_position('left')
-    cbar.ax.yaxis.tick_left()
-
-    # Set title
-    ax.set_title(title, fontsize=16, pad=20)
-
-    plt.tight_layout()
-    plt.savefig(f"images/{filename}_{range}.png", dpi=300, bbox_inches='tight')
-    plt.close()
 
 
     
@@ -367,7 +295,7 @@ def plot_liquidation_heatmap_v2(heatmap_data, title, filename, range="3d"):
     # Set title
     ax.set_title(title, fontsize=16, pad=20)
 
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig(f"images/{filename}_{range}.png", dpi=300, bbox_inches='tight')
     plt.close()
     price_levels = heatmap_data['price_levels']
@@ -439,332 +367,317 @@ def main():
     os.makedirs("images", exist_ok=True)
 
     try:
-        # # Supported coins
-        # supported_coins_df = cg_api.supported_coins()
-        # print("Supported coins:")
-        # print(supported_coins_df)
-        # plt.figure(figsize=(12, 6))
-        # plt.bar(range(len(supported_coins_df)), [1]*len(supported_coins_df))
-        # plt.title("Supported Coins")
-        # plt.xlabel("Coins")
-        # plt.ylabel("Count")
-        # plt.xticks([])  # Remove x-axis labels as there are too many
-        # plt.tight_layout()
-        # plt.savefig("images/supported_coins.png")
-        # plt.close()
-
-        # # Supported exchanges and pairs
-        # supported_pairs_df = cg_api.supported_exchange_pairs()
-        # print("\nSupported exchanges and pairs:")
-        # print(supported_pairs_df)
-        # exchange_counts = supported_pairs_df['exchange'].value_counts()
-        # plt.figure(figsize=(12, 6))
-        # plt.bar(exchange_counts.index, exchange_counts.values)
-        # plt.title("Supported Exchanges")
-        # plt.xlabel("Exchange")
-        # plt.ylabel("Number of Pairs")
-        # plt.xticks(rotation=90)
-        # plt.tight_layout()
-        # plt.savefig("images/supported_exchanges.png")
-        # plt.close()
-
-        # # OHLC history
-        # ohlc_df = cg_api.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=30)
-        # print("\nOHLC history:")
-        # print(ohlc_df)
-        # plt.figure(figsize=(12, 6))
-        # plt.plot(ohlc_df.index, ohlc_df['c'])
-        # plt.title("BTCUSDT OHLC History (Close Price)")
-        # plt.xlabel("Date")
-        # plt.ylabel("Close Price")
-        # plt.xticks(rotation=45)
-        # plt.tight_layout()
-        # plt.savefig("images/ohlc_history.png")
-        # plt.close()
-
-        # # Aggregated OHLC history
-        # ohlc_agg_df = cg_api.ohlc_aggregated_history(symbol="BTC", interval="1d", limit=30)
-        # print("\nAggregated OHLC history:")
-        # print(ohlc_agg_df)
-        # plt.figure(figsize=(12, 6))
-        # plt.plot(ohlc_agg_df.index, ohlc_agg_df['c'])
-        # plt.title("BTC Aggregated OHLC History (Close Price)")
-        # plt.xlabel("Date")
-        # plt.ylabel("Close Price")
-        # plt.xticks(rotation=45)
-        # plt.tight_layout()
-        # plt.savefig("images/ohlc_aggregated_history.png")
-        # plt.close()
-
-        # # Aggregated stablecoin margin OHLC history
-        # ohlc_agg_stablecoin_df = cg_api.ohlc_aggregated_stablecoin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=30)
-        # print("\nAggregated stablecoin margin OHLC history:")
-        # print(ohlc_agg_stablecoin_df)
-        # plt.figure(figsize=(12, 6))
-        # plt.plot(ohlc_agg_stablecoin_df.index, ohlc_agg_stablecoin_df['c'])
-        # plt.title("BTC Aggregated Stablecoin Margin OHLC History (Close Price)")
-        # plt.xlabel("Date")
-        # plt.ylabel("Close Price")
-        # plt.xticks(rotation=45)
-        # plt.tight_layout()
-        # plt.savefig("images/ohlc_agg_stablecoin_history.png")
-        # plt.close()
-
-        # # Aggregated coin margin OHLC history
-        # ohlc_agg_coin_df = cg_api.ohlc_aggregated_coin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=30)
-        # print("\nAggregated coin margin OHLC history:")
-        # print(ohlc_agg_coin_df)
-        # plt.figure(figsize=(12, 6))
-        # plt.plot(ohlc_agg_coin_df.index, ohlc_agg_coin_df['c'])
-        # plt.title("BTC Aggregated Coin Margin OHLC History (Close Price)")
-        # plt.xlabel("Date")
-        # plt.ylabel("Close Price")
-        # plt.xticks(rotation=45)
-        # plt.tight_layout()
-        # plt.savefig("images/ohlc_agg_coin_history.png")
-        # plt.close()
-
-        # # Open interest data from exchanges
-        # exchange_list_df = cg_api.exchange_list(symbol="BTC")
-        # print("\nOpen interest data from exchanges:")
-        # print(exchange_list_df)
-        # plt.figure(figsize=(12, 6))
-        # plt.bar(exchange_list_df['exchange'], exchange_list_df['openInterest'])
-        # plt.title("BTC Open Interest by Exchange")
-        # plt.xlabel("Exchange")
-        # plt.ylabel("Open Interest")
-        # plt.xticks(rotation=90)
-        # plt.tight_layout()
-        # plt.savefig("images/open_interest_by_exchange.png")
-        # plt.close()
-
-        # # Exchange history chart
-        # exchange_history_df = cg_api.exchange_history_chart(symbol="BTC", range="4h", unit="USD")
-        # print("\nExchange history chart:")
-        # print(exchange_history_df)
-        # plt.figure(figsize=(12, 6))
-        # for column in exchange_history_df.columns:
-        #     if column != "price":
-        #         plt.plot(exchange_history_df.index, exchange_history_df[column], label=column)
-        # plt.title("BTC Open Interest History by Exchange")
-        # plt.xlabel("Date")
-        # plt.ylabel("Open Interest")
-        # plt.legend()
-        # plt.xticks(rotation=45)
-        # plt.tight_layout()
-        # plt.savefig("images/exchange_history_chart.png")
-        # plt.close()
+        # Supported coins
+        supported_coins_df = cg_api.supported_coins()
+        print("Supported coins:")
+        print(supported_coins_df)
         
-    # # Funding Rate OHLC History
-    #     funding_rate_ohlc_df = cg_api.funding_rate_ohlc_history(
-    #         exchange="Binance", 
-    #         symbol="BTCUSDT", 
-    #         interval="1d", 
-    #         limit=30
-    #     )
-    #     print("\nFunding Rate OHLC History:")
-    #     print(funding_rate_ohlc_df)
+        # Supported exchanges and pairs
+        supported_pairs_df = cg_api.supported_exchange_pairs()
+        print("\nSupported exchanges and pairs:")
+        print(supported_pairs_df)
+        
 
-    #     # Plot Funding Rate OHLC History
-    #     plt.figure(figsize=(12, 6))
-    #     plt.plot(funding_rate_ohlc_df.index, funding_rate_ohlc_df['c'], label='Close')
-    #     plt.fill_between(funding_rate_ohlc_df.index, funding_rate_ohlc_df['l'], funding_rate_ohlc_df['h'], alpha=0.3)
-    #     plt.title("BTCUSDT Funding Rate OHLC History")
-    #     plt.xlabel("Date")
-    #     plt.ylabel("Funding Rate")
-    #     plt.legend()
-    #     plt.xticks(rotation=45)
-    #     plt.tight_layout()
-    #     plt.savefig("images/funding_rate_ohlc_history.png")
-    #     plt.close()
+        # OHLC history
+        ohlc_df = cg_api.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1h", limit=3500)
+        print("\nOHLC history:")
+        print(ohlc_df)
+        plt.figure(figsize=(12, 6))
+        plt.plot(ohlc_df.index, ohlc_df['c'])
+        plt.title("BTCUSDT OHLC History (Close Price)")
+        plt.xlabel("Date")
+        plt.ylabel("Close Price")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/ohlc_history.png")
+        plt.close()
+        
+        # plot total liquidation value accoss exchanges
+        
+
+        # Aggregated OHLC history
+        ohlc_agg_df = cg_api.ohlc_aggregated_history(symbol="BTC", interval="1d", limit=30)
+        print("\nAggregated OHLC history:")
+        print(ohlc_agg_df)
+        plt.figure(figsize=(12, 6))
+        plt.plot(ohlc_agg_df.index, ohlc_agg_df['c'])
+        plt.title("BTC Aggregated OHLC History (Close Price)")
+        plt.xlabel("Date")
+        plt.ylabel("Close Price")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/ohlc_aggregated_history.png")
+        plt.close()
+
+        # Aggregated stablecoin margin OHLC history
+        ohlc_agg_stablecoin_df = cg_api.ohlc_aggregated_stablecoin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=30)
+        print("\nAggregated stablecoin margin OHLC history:")
+        print(ohlc_agg_stablecoin_df)
+        plt.figure(figsize=(12, 6))
+        plt.plot(ohlc_agg_stablecoin_df.index, ohlc_agg_stablecoin_df['c'])
+        plt.title("BTC Aggregated Stablecoin Margin OHLC History (Close Price)")
+        plt.xlabel("Date")
+        plt.ylabel("Close Price")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/ohlc_agg_stablecoin_history.png")
+        plt.close()
+
+        # Aggregated coin margin OHLC history
+        ohlc_agg_coin_df = cg_api.ohlc_aggregated_coin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=30)
+        print("\nAggregated coin margin OHLC history:")
+        print(ohlc_agg_coin_df)
+        plt.figure(figsize=(12, 6))
+        plt.plot(ohlc_agg_coin_df.index, ohlc_agg_coin_df['c'])
+        plt.title("BTC Aggregated Coin Margin OHLC History (Close Price)")
+        plt.xlabel("Date")
+        plt.ylabel("Close Price")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/ohlc_agg_coin_history.png")
+        plt.close()
+
+        # Open interest data from exchanges
+        exchange_list_df = cg_api.exchange_list(symbol="BTC")
+        print("\nOpen interest data from exchanges:")
+        print(exchange_list_df)
+        plt.figure(figsize=(12, 6))
+        plt.bar(exchange_list_df['exchange'], exchange_list_df['openInterest'])
+        plt.title("BTC Open Interest by Exchange")
+        plt.xlabel("Exchange")
+        plt.ylabel("Open Interest")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig("images/open_interest_by_exchange.png")
+        plt.close()
+
+        # Exchange history chart
+        exchange_history_df = cg_api.exchange_history_chart(symbol="BTC", range="4h", unit="USD")
+        print("\nExchange history chart:")
+        print(exchange_history_df)
+        plt.figure(figsize=(12, 6))
+        for column in exchange_history_df.columns:
+            if column != "price":
+                plt.plot(exchange_history_df.index, exchange_history_df[column], label=column)
+        plt.title("BTC Open Interest History by Exchange")
+        plt.xlabel("Date")
+        plt.ylabel("Open Interest")
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/exchange_history_chart.png")
+        plt.close()
+        
+    # Funding Rate OHLC History
+        funding_rate_ohlc_df = cg_api.funding_rate_ohlc_history(
+            exchange="Binance", 
+            symbol="BTCUSDT", 
+            interval="1d", 
+            limit=30
+        )
+        print("\nFunding Rate OHLC History:")
+        print(funding_rate_ohlc_df)
+
+        # Plot Funding Rate OHLC History
+        plt.figure(figsize=(12, 6))
+        plt.plot(funding_rate_ohlc_df.index, funding_rate_ohlc_df['c'], label='Close')
+        plt.fill_between(funding_rate_ohlc_df.index, funding_rate_ohlc_df['l'], funding_rate_ohlc_df['h'], alpha=0.3)
+        plt.title("BTCUSDT Funding Rate OHLC History")
+        plt.xlabel("Date")
+        plt.ylabel("Funding Rate")
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/funding_rate_ohlc_history.png")
+        plt.close()
     
-    # # OI Weight OHLC History
-    #     oi_weight_ohlc_df = cg_api.oi_weight_ohlc_history(
-    #         symbol="BTC", 
-    #         interval="1d", 
-    #         limit=30
-    #     )
-    #     print("\nOI Weight OHLC History:")
-    #     print(oi_weight_ohlc_df)
+    # OI Weight OHLC History
+        oi_weight_ohlc_df = cg_api.oi_weight_ohlc_history(
+            symbol="BTC", 
+            interval="1d", 
+            limit=30
+        )
+        print("\nOI Weight OHLC History:")
+        print(oi_weight_ohlc_df)
 
-    #     # Plot OI Weight OHLC History
-    #     plt.figure(figsize=(12, 6))
-    #     plt.plot(oi_weight_ohlc_df.index, oi_weight_ohlc_df['c'], label='Close')
-    #     plt.fill_between(oi_weight_ohlc_df.index, oi_weight_ohlc_df['l'], oi_weight_ohlc_df['h'], alpha=0.3)
-    #     plt.title("BTC OI Weight OHLC History")
-    #     plt.xlabel("Date")
-    #     plt.ylabel("OI Weight")
-    #     plt.legend()
-    #     plt.xticks(rotation=45)
-    #     plt.tight_layout()
-    #     plt.savefig("images/oi_weight_ohlc_history.png")
-    #     plt.close()
-    # # Vol Weight OHLC History
-    #     vol_weight_ohlc_df = cg_api.vol_weight_ohlc_history(
-    #         symbol="BTC", 
-    #         interval="1d", 
-    #         limit=30
-    #     )
-    #     print("\nVol Weight OHLC History:")
-    #     print(vol_weight_ohlc_df)
-    #     plot_ohlc(vol_weight_ohlc_df, "BTC Vol Weight OHLC History", "vol_weight_ohlc_history")
+        # Plot OI Weight OHLC History
+        plt.figure(figsize=(12, 6))
+        plt.plot(oi_weight_ohlc_df.index, oi_weight_ohlc_df['c'], label='Close')
+        plt.fill_between(oi_weight_ohlc_df.index, oi_weight_ohlc_df['l'], oi_weight_ohlc_df['h'], alpha=0.3)
+        plt.title("BTC OI Weight OHLC History")
+        plt.xlabel("Date")
+        plt.ylabel("OI Weight")
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("images/oi_weight_ohlc_history.png")
+        plt.close()
+    # Vol Weight OHLC History
+        vol_weight_ohlc_df = cg_api.vol_weight_ohlc_history(
+            symbol="BTC", 
+            interval="1d", 
+            limit=30
+        )
+        print("\nVol Weight OHLC History:")
+        print(vol_weight_ohlc_df)
+        plot_ohlc(vol_weight_ohlc_df, "BTC Vol Weight OHLC History", "vol_weight_ohlc_history")
     
-    # # Funding Rate Exchange List
-    #     funding_rate_df = cg_api.funding_rate_exchange_list(symbol="BTC")
+    # Funding Rate Exchange List
+        funding_rate_df = cg_api.funding_rate_exchange_list(symbol="BTC")
         
-    #     # Filter out rows with NaN funding rates
-    #     funding_rate_df = funding_rate_df.dropna(subset=['funding_rate'])
+        # Filter out rows with NaN funding rates
+        funding_rate_df = funding_rate_df.dropna(subset=['funding_rate'])
         
-    #     # Convert funding_rate to numeric and calculate absolute value
-    #     funding_rate_df['funding_rate'] = pd.to_numeric(funding_rate_df['funding_rate'], errors='coerce')
-    #     funding_rate_df['abs_funding_rate'] = funding_rate_df['funding_rate'].abs()
+        # Convert funding_rate to numeric and calculate absolute value
+        funding_rate_df['funding_rate'] = pd.to_numeric(funding_rate_df['funding_rate'], errors='coerce')
+        funding_rate_df['abs_funding_rate'] = funding_rate_df['funding_rate'].abs()
         
-    #     print("\nFunding Rate Exchange List (Top 10 by absolute funding rate):")
-    #     top_10 = funding_rate_df.sort_values('abs_funding_rate', ascending=False).head(10)
-    #     print(top_10[['symbol', 'margin_type', 'exchange', 'funding_rate', 'next_funding_time']].to_string(index=False))
+        print("\nFunding Rate Exchange List (Top 10 by absolute funding rate):")
+        top_10 = funding_rate_df.sort_values('abs_funding_rate', ascending=False).head(10)
+        print(top_10[['symbol', 'margin_type', 'exchange', 'funding_rate', 'next_funding_time']].to_string(index=False))
 
-    #     # Plot Funding Rates (top 20 exchanges by absolute funding rate)
-    #     top_20 = funding_rate_df.sort_values('abs_funding_rate', ascending=False).head(20)
-    #     plot_funding_rates(top_20, "BTC Funding Rates - Top 20 Exchanges", "funding_rates_top_20")
+        # Plot Funding Rates (top 20 exchanges by absolute funding rate)
+        top_20 = funding_rate_df.sort_values('abs_funding_rate', ascending=False).head(20)
+        plot_funding_rates(top_20, "BTC Funding Rates - Top 20 Exchanges", "funding_rates_top_20")
 
-    #     # Display next funding times
-    #     print("\nNext Funding Times (next 10):")
-    #     next_funding_times = funding_rate_df[["exchange", "next_funding_time"]].sort_values("next_funding_time")
-    #     next_funding_times = next_funding_times[next_funding_times["next_funding_time"].notna()]  # Remove rows with NaT
-    #     print(next_funding_times.head(10).to_string(index=False))
+        # Display next funding times
+        print("\nNext Funding Times (next 10):")
+        next_funding_times = funding_rate_df[["exchange", "next_funding_time"]].sort_values("next_funding_time")
+        next_funding_times = next_funding_times[next_funding_times["next_funding_time"].notna()]  # Remove rows with NaT
+        print(next_funding_times.head(10).to_string(index=False))
         
-    # # Liquidation History
-    #     liq_history_df = cg_api.liquidation_history(
-    #         exchange="Binance",
-    #         symbol="BTCUSDT",
-    #         interval="1d",
-    #         limit=30
-    #     )
-    #     print("\nLiquidation History:")
-    #     print(liq_history_df)
+    # Liquidation History
+        liq_history_df = cg_api.liquidation_history(
+            exchange="Binance",
+            symbol="BTCUSDT",
+            interval="1d",
+            limit=30
+        )
+        print("\nLiquidation History:")
+        print(liq_history_df)
 
-    #     # Plot Liquidation History
-    #     plot_liquidation_history(liq_history_df, "BTCUSDT Liquidation History", "liquidation_history")
+        # Plot Liquidation History
+        plot_liquidation_history(liq_history_df, "BTCUSDT Liquidation History", "liquidation_history")
 
-    #     # Calculate and print total liquidations
-    #     total_long_liq = liq_history_df['longLiquidationUsd'].sum()
-    #     total_short_liq = liq_history_df['shortLiquidationUsd'].sum()
-    #     print(f"\nTotal Long Liquidations: ${total_long_liq:,.2f}")
-    #     print(f"Total Short Liquidations: ${total_short_liq:,.2f}")
-    #     print(f"Total Liquidations: ${total_long_liq + total_short_liq:,.2f}")
+        # Calculate and print total liquidations
+        total_long_liq = liq_history_df['longLiquidationUsd'].sum()
+        total_short_liq = liq_history_df['shortLiquidationUsd'].sum()
+        print(f"\nTotal Long Liquidations: ${total_long_liq:,.2f}")
+        print(f"Total Short Liquidations: ${total_short_liq:,.2f}")
+        print(f"Total Liquidations: ${total_long_liq + total_short_liq:,.2f}")
 
-    #     # Find and print the day with the highest liquidations
-    #     liq_history_df['totalLiquidationUsd'] = liq_history_df['longLiquidationUsd'] + liq_history_df['shortLiquidationUsd']
-    #     max_liq_day = liq_history_df.loc[liq_history_df['totalLiquidationUsd'].idxmax()]
-    #     print(f"\nDay with highest liquidations: {max_liq_day.name.date()}")
-    #     print(f"Total liquidations on that day: ${max_liq_day['totalLiquidationUsd']:,.2f}")
-    #     print(f"Long liquidations: ${max_liq_day['longLiquidationUsd']:,.2f}")
-    #     print(f"Short liquidations: ${max_liq_day['shortLiquidationUsd']:,.2f}")
+        # Find and print the day with the highest liquidations
+        liq_history_df['totalLiquidationUsd'] = liq_history_df['longLiquidationUsd'] + liq_history_df['shortLiquidationUsd']
+        max_liq_day = liq_history_df.loc[liq_history_df['totalLiquidationUsd'].idxmax()]
+        print(f"\nDay with highest liquidations: {max_liq_day.name.date()}")
+        print(f"Total liquidations on that day: ${max_liq_day['totalLiquidationUsd']:,.2f}")
+        print(f"Long liquidations: ${max_liq_day['longLiquidationUsd']:,.2f}")
+        print(f"Short liquidations: ${max_liq_day['shortLiquidationUsd']:,.2f}")
         
-    # # Aggregated Liquidation History
-    #     agg_liq_history_df = cg_api.liquidation_aggregated_history(
-    #         symbol="BTC",
-    #         interval="1d",
-    #         limit=30
-    #     )
-    #     print("\nAggregated Liquidation History (BTC):")
-    #     print(agg_liq_history_df)
+    # Aggregated Liquidation History
+        agg_liq_history_df = cg_api.liquidation_aggregated_history(
+            symbol="BTC",
+            interval="1d",
+            limit=30
+        )
+        print("\nAggregated Liquidation History (BTC):")
+        print(agg_liq_history_df)
 
-    #     # Plot Aggregated Liquidation History
-    #     plot_liquidation_history(agg_liq_history_df, "BTC Aggregated Liquidation History", "liquidation_history_aggregated")
+        # Plot Aggregated Liquidation History
+        plot_liquidation_history(agg_liq_history_df, "BTC Aggregated Liquidation History", "liquidation_history_aggregated")
 
-    #     # Calculate and print total liquidations for both datasets
-    #     for name, df in [("Binance BTCUSDT", liq_history_df), ("Aggregated BTC", agg_liq_history_df)]:
-    #         total_long_liq = df['longLiquidationUsd'].sum()
-    #         total_short_liq = df['shortLiquidationUsd'].sum()
-    #         print(f"\nTotal Liquidations for {name}:")
-    #         print(f"Total Long Liquidations: ${total_long_liq:,.2f}")
-    #         print(f"Total Short Liquidations: ${total_short_liq:,.2f}")
-    #         print(f"Total Liquidations: ${total_long_liq + total_short_liq:,.2f}")
+        # Calculate and print total liquidations for both datasets
+        for name, df in [("Binance BTCUSDT", liq_history_df), ("Aggregated BTC", agg_liq_history_df)]:
+            total_long_liq = df['longLiquidationUsd'].sum()
+            total_short_liq = df['shortLiquidationUsd'].sum()
+            print(f"\nTotal Liquidations for {name}:")
+            print(f"Total Long Liquidations: ${total_long_liq:,.2f}")
+            print(f"Total Short Liquidations: ${total_short_liq:,.2f}")
+            print(f"Total Liquidations: ${total_long_liq + total_short_liq:,.2f}")
 
-    #         # Find and print the day with the highest liquidations
-    #         df['totalLiquidationUsd'] = df['longLiquidationUsd'] + df['shortLiquidationUsd']
-    #         max_liq_day = df.loc[df['totalLiquidationUsd'].idxmax()]
-    #         print(f"\nDay with highest liquidations for {name}: {max_liq_day.name.date()}")
-    #         print(f"Total liquidations on that day: ${max_liq_day['totalLiquidationUsd']:,.2f}")
-    #         print(f"Long liquidations: ${max_liq_day['longLiquidationUsd']:,.2f}")
-    #         print(f"Short liquidations: ${max_liq_day['shortLiquidationUsd']:,.2f}")
+            # Find and print the day with the highest liquidations
+            df['totalLiquidationUsd'] = df['longLiquidationUsd'] + df['shortLiquidationUsd']
+            max_liq_day = df.loc[df['totalLiquidationUsd'].idxmax()]
+            print(f"\nDay with highest liquidations for {name}: {max_liq_day.name.date()}")
+            print(f"Total liquidations on that day: ${max_liq_day['totalLiquidationUsd']:,.2f}")
+            print(f"Long liquidations: ${max_liq_day['longLiquidationUsd']:,.2f}")
+            print(f"Short liquidations: ${max_liq_day['shortLiquidationUsd']:,.2f}")
 
-    # # Liquidation Coin List
-    #     liq_coin_list_df = cg_api.liquidation_coin_list(ex="Binance")
-    #     print("\nLiquidation Coin List (Binance):")
-    #     print(liq_coin_list_df)
+    # Liquidation Coin List
+        liq_coin_list_df = cg_api.liquidation_coin_list(ex="Binance")
+        print("\nLiquidation Coin List (Binance):")
+        print(liq_coin_list_df)
 
-    #     # Plot Top 10 Coins by 24h Liquidation
-    #     plot_top_liquidations(liq_coin_list_df, "Top 10 Coins by 24h Liquidation (Binance)", "top_10_liquidations_24h")
+        # Plot Top 10 Coins by 24h Liquidation
+        plot_top_liquidations(liq_coin_list_df, "Top 10 Coins by 24h Liquidation (Binance)", "top_10_liquidations_24h")
 
-    #     # Calculate and print total liquidations
-    #     total_liq_24h = liq_coin_list_df['liquidationUsd24h'].sum()
-    #     total_long_liq_24h = liq_coin_list_df['longLiquidationUsd24h'].sum()
-    #     total_short_liq_24h = liq_coin_list_df['shortLiquidationUsd24h'].sum()
+        # Calculate and print total liquidations
+        total_liq_24h = liq_coin_list_df['liquidationUsd24h'].sum()
+        total_long_liq_24h = liq_coin_list_df['longLiquidationUsd24h'].sum()
+        total_short_liq_24h = liq_coin_list_df['shortLiquidationUsd24h'].sum()
 
-    #     print(f"\nTotal Liquidations (24h) on Binance:")
-    #     print(f"Total Liquidations: ${total_liq_24h:,.2f}")
-    #     print(f"Total Long Liquidations: ${total_long_liq_24h:,.2f}")
-    #     print(f"Total Short Liquidations: ${total_short_liq_24h:,.2f}")
+        print(f"\nTotal Liquidations (24h) on Binance:")
+        print(f"Total Liquidations: ${total_liq_24h:,.2f}")
+        print(f"Total Long Liquidations: ${total_long_liq_24h:,.2f}")
+        print(f"Total Short Liquidations: ${total_short_liq_24h:,.2f}")
 
-    #     # Find and print the coin with the highest liquidations
-    #     max_liq_coin = liq_coin_list_df.loc[liq_coin_list_df['liquidationUsd24h'].idxmax()]
-    #     print(f"\nCoin with highest liquidations (24h): {max_liq_coin['symbol']}")
-    #     print(f"Total liquidations: ${max_liq_coin['liquidationUsd24h']:,.2f}")
-    #     print(f"Long liquidations: ${max_liq_coin['longLiquidationUsd24h']:,.2f}")
-    #     print(f"Short liquidations: ${max_liq_coin['shortLiquidationUsd24h']:,.2f}")
+        # Find and print the coin with the highest liquidations
+        max_liq_coin = liq_coin_list_df.loc[liq_coin_list_df['liquidationUsd24h'].idxmax()]
+        print(f"\nCoin with highest liquidations (24h): {max_liq_coin['symbol']}")
+        print(f"Total liquidations: ${max_liq_coin['liquidationUsd24h']:,.2f}")
+        print(f"Long liquidations: ${max_liq_coin['longLiquidationUsd24h']:,.2f}")
+        print(f"Short liquidations: ${max_liq_coin['shortLiquidationUsd24h']:,.2f}")
 
-    #     # Calculate and print the ratio of long to short liquidations
-    #     liq_coin_list_df['long_short_ratio'] = liq_coin_list_df['longLiquidationUsd24h'] / liq_coin_list_df['shortLiquidationUsd24h']
-    #     print("\nTop 5 coins with highest long/short liquidation ratio:")
-    #     print(liq_coin_list_df.sort_values('long_short_ratio', ascending=False)[['symbol', 'long_short_ratio']].head())
+        # Calculate and print the ratio of long to short liquidations
+        liq_coin_list_df['long_short_ratio'] = liq_coin_list_df['longLiquidationUsd24h'] / liq_coin_list_df['shortLiquidationUsd24h']
+        print("\nTop 5 coins with highest long/short liquidation ratio:")
+        print(liq_coin_list_df.sort_values('long_short_ratio', ascending=False)[['symbol', 'long_short_ratio']].head())
 
-    #     print("\nTop 5 coins with lowest long/short liquidation ratio:")
-    #     print(liq_coin_list_df.sort_values('long_short_ratio', ascending=True)[['symbol', 'long_short_ratio']].head())
+        print("\nTop 5 coins with lowest long/short liquidation ratio:")
+        print(liq_coin_list_df.sort_values('long_short_ratio', ascending=True)[['symbol', 'long_short_ratio']].head())
 
-    # # Liquidation Exchange List
-    #     liq_exchange_list_df = cg_api.liquidation_exchange_list(symbol="BTC", range="24h")
-    #     print("\nLiquidation Exchange List (BTC, 24h):")
-    #     print(liq_exchange_list_df)
+    # Liquidation Exchange List
+        liq_exchange_list_df = cg_api.liquidation_exchange_list(symbol="BTC", range="24h")
+        print("\nLiquidation Exchange List (BTC, 24h):")
+        print(liq_exchange_list_df)
 
-    #     # Plot Exchange Liquidations
-    #     plot_exchange_liquidations(liq_exchange_list_df, "BTC Liquidations by Exchange (24h)", "btc_liquidations_by_exchange")
+        # Plot Exchange Liquidations
+        plot_exchange_liquidations(liq_exchange_list_df, "BTC Liquidations by Exchange (24h)", "btc_liquidations_by_exchange")
 
-    #     # Calculate and print total liquidations
-    #     total_row = liq_exchange_list_df[liq_exchange_list_df['exchange'] == 'All']
-    #     if not total_row.empty:
-    #         total_row = total_row.iloc[0]
-    #         print(f"\nTotal BTC Liquidations (24h):")
-    #         print(f"Total Liquidations: ${total_row['liquidationUsd']:,.2f}")
-    #         print(f"Total Long Liquidations: ${total_row['longLiquidationUsd']:,.2f}")
-    #         print(f"Total Short Liquidations: ${total_row['shortLiquidationUsd']:,.2f}")
-    #     else:
-    #         print("\nNo 'All' row found in the data.")
+        # Calculate and print total liquidations
+        total_row = liq_exchange_list_df[liq_exchange_list_df['exchange'] == 'All']
+        if not total_row.empty:
+            total_row = total_row.iloc[0]
+            print(f"\nTotal BTC Liquidations (24h):")
+            print(f"Total Liquidations: ${total_row['liquidationUsd']:,.2f}")
+            print(f"Total Long Liquidations: ${total_row['longLiquidationUsd']:,.2f}")
+            print(f"Total Short Liquidations: ${total_row['shortLiquidationUsd']:,.2f}")
+        else:
+            print("\nNo 'All' row found in the data.")
 
-    #     # Find and print the exchange with the highest liquidations
-    #     exchange_data = liq_exchange_list_df[liq_exchange_list_df['exchange'] != 'All'].copy()
-    #     if not exchange_data.empty:
-    #         max_liq_exchange = exchange_data.loc[exchange_data['liquidationUsd'].idxmax()]
-    #         print(f"\nExchange with highest BTC liquidations (24h): {max_liq_exchange['exchange']}")
-    #         print(f"Total liquidations: ${max_liq_exchange['liquidationUsd']:,.2f}")
-    #         print(f"Long liquidations: ${max_liq_exchange['longLiquidationUsd']:,.2f}")
-    #         print(f"Short liquidations: ${max_liq_exchange['shortLiquidationUsd']:,.2f}")
-    #     else:
-    #         print("\nNo exchange data available.")
+        # Find and print the exchange with the highest liquidations
+        exchange_data = liq_exchange_list_df[liq_exchange_list_df['exchange'] != 'All'].copy()
+        if not exchange_data.empty:
+            max_liq_exchange = exchange_data.loc[exchange_data['liquidationUsd'].idxmax()]
+            print(f"\nExchange with highest BTC liquidations (24h): {max_liq_exchange['exchange']}")
+            print(f"Total liquidations: ${max_liq_exchange['liquidationUsd']:,.2f}")
+            print(f"Long liquidations: ${max_liq_exchange['longLiquidationUsd']:,.2f}")
+            print(f"Short liquidations: ${max_liq_exchange['shortLiquidationUsd']:,.2f}")
+        else:
+            print("\nNo exchange data available.")
 
-    #     # Calculate and print the ratio of long to short liquidations for each exchange
-    #     exchange_data.loc[:, 'long_short_ratio'] = exchange_data['longLiquidationUsd'] / exchange_data['shortLiquidationUsd']
-    #     print("\nLong/Short liquidation ratio by exchange:")
-    #     ratio_data = exchange_data[['exchange', 'long_short_ratio']].sort_values('long_short_ratio', ascending=False)
-    #     print(ratio_data)
+        # Calculate and print the ratio of long to short liquidations for each exchange
+        exchange_data.loc[:, 'long_short_ratio'] = exchange_data['longLiquidationUsd'] / exchange_data['shortLiquidationUsd']
+        print("\nLong/Short liquidation ratio by exchange:")
+        ratio_data = exchange_data[['exchange', 'long_short_ratio']].sort_values('long_short_ratio', ascending=False)
+        print(ratio_data)
 
-    #     # Additional analysis: Percentage of liquidations by exchange
-    #     if not exchange_data.empty:
-    #         total_liq = exchange_data['liquidationUsd'].sum()
-    #         exchange_data.loc[:, 'liquidation_percentage'] = (exchange_data['liquidationUsd'] / total_liq) * 100
-    #         print("\nPercentage of liquidations by exchange:")
-    #         print(exchange_data[['exchange', 'liquidation_percentage']].sort_values('liquidation_percentage', ascending=False))
+        # Additional analysis: Percentage of liquidations by exchange
+        if not exchange_data.empty:
+            total_liq = exchange_data['liquidationUsd'].sum()
+            exchange_data.loc[:, 'liquidation_percentage'] = (exchange_data['liquidationUsd'] / total_liq) * 100
+            print("\nPercentage of liquidations by exchange:")
+            print(exchange_data[['exchange', 'liquidation_percentage']].sort_values('liquidation_percentage', ascending=False))
     
     # # Liquidation Aggregated Heatmap Model2
     #     liq_heatmap_data = cg_api.liquidation_aggregated_heatmap_model2(symbol="BTC", range="3d")
@@ -839,7 +752,7 @@ def main():
     #     print(long_short_ratio_df)
 
     #     # Plot Long/Short Account Ratio
-    #     plot_long_short_ratio(long_short_ratio_df, "BTCUSDT Long/Short Account Ratio", "btc_long_short_ratio")
+    #     plot_long_short_ratio(long_short_ratio_df, "BTCUSDT Long/Short Account Ratio", "btc_long_short_ratio","longshort")
 
     #     # Additional analysis
     #     current_ratio = long_short_ratio_df.iloc[-1]
@@ -858,51 +771,51 @@ def main():
     #     print(f"Highest Long/Short Ratio: {max_ratio:.3f}")
     #     print(f"Lowest Long/Short Ratio: {min_ratio:.3f}")
     
-    # # Global Long/Short Account Ratio
-    #     global_long_short_ratio_df = cg_api.global_long_short_account_ratio(
-    #         exchange="Binance",
-    #         symbol="BTCUSDT",
-    #         interval="1h",
-    #         limit=168  # Last 7 days of hourly data
-    #     )
-    #     print("\nGlobal Long/Short Account Ratio (BTCUSDT, last 7 days):")
-    #     print(global_long_short_ratio_df)
+    # Global Long/Short Account Ratio
+        global_long_short_ratio_df = cg_api.global_long_short_account_ratio(
+            exchange="Binance",
+            symbol="BTCUSDT",
+            interval="1h",
+            limit=168  # Last 7 days of hourly data
+        )
+        print("\nGlobal Long/Short Account Ratio (BTCUSDT, last 7 days):")
+        print(global_long_short_ratio_df)
 
-    #     # Top Accounts Long/Short Ratio
-    #     top_long_short_ratio_df = cg_api.top_long_short_account_ratio(
-    #         exchange="Binance",
-    #         symbol="BTCUSDT",
-    #         interval="1h",
-    #         limit=168  # Last 7 days of hourly data
-    #     )
-    #     print("\nTop Accounts Long/Short Ratio (BTCUSDT, last 7 days):")
-    #     print(top_long_short_ratio_df)
+        # Top Accounts Long/Short Ratio
+        top_long_short_ratio_df = cg_api.top_long_short_account_ratio(
+            exchange="Binance",
+            symbol="BTCUSDT",
+            interval="1h",
+            limit=168  # Last 7 days of hourly data
+        )
+        print("\nTop Accounts Long/Short Ratio (BTCUSDT, last 7 days):")
+        print(top_long_short_ratio_df)
 
-    #     # Plot Long/Short Account Ratio
-    #     plot_long_short_ratio(global_long_short_ratio_df, top_long_short_ratio_df, 
-    #                           "BTCUSDT Long/Short Account Ratio", "btc_long_short_ratio")
+        # Plot Long/Short Account Ratio
+        plot_long_short_ratio(global_long_short_ratio_df, top_long_short_ratio_df, 
+                              "BTCUSDT Long/Short Account Ratio", "btc_long_short_ratio")
 
-    #     # Additional analysis
-    #     for df_name, df in [("Global", global_long_short_ratio_df), ("Top Accounts", top_long_short_ratio_df)]:
-    #         current_ratio = df.iloc[-1]
-    #         print(f"\nCurrent {df_name} Long/Short Account Ratio:")
-    #         print(f"Long Account: {current_ratio['longAccount']:.2f}%")
-    #         print(f"Short Account: {current_ratio['shortAccount']:.2f}%")
-    #         print(f"Long/Short Ratio: {current_ratio['longShortRatio']:.3f}")
+        # Additional analysis
+        for df_name, df in [("Global", global_long_short_ratio_df), ("Top Accounts", top_long_short_ratio_df)]:
+            current_ratio = df.iloc[-1]
+            print(f"\nCurrent {df_name} Long/Short Account Ratio:")
+            print(f"Long Account: {current_ratio['longAccount']:.2f}%")
+            print(f"Short Account: {current_ratio['shortAccount']:.2f}%")
+            print(f"Long/Short Ratio: {current_ratio['longShortRatio']:.3f}")
 
-    #         # Calculate average ratio over the period
-    #         avg_ratio = df['longShortRatio'].mean()
-    #         print(f"\nAverage {df_name} Long/Short Ratio over the last 7 days: {avg_ratio:.3f}")
+            # Calculate average ratio over the period
+            avg_ratio = df['longShortRatio'].mean()
+            print(f"\nAverage {df_name} Long/Short Ratio over the last 7 days: {avg_ratio:.3f}")
 
-    #         # Find highest and lowest ratios
-    #         max_ratio = df['longShortRatio'].max()
-    #         min_ratio = df['longShortRatio'].min()
-    #         print(f"Highest {df_name} Long/Short Ratio: {max_ratio:.3f}")
-    #         print(f"Lowest {df_name} Long/Short Ratio: {min_ratio:.3f}")
+            # Find highest and lowest ratios
+            max_ratio = df['longShortRatio'].max()
+            min_ratio = df['longShortRatio'].min()
+            print(f"Highest {df_name} Long/Short Ratio: {max_ratio:.3f}")
+            print(f"Lowest {df_name} Long/Short Ratio: {min_ratio:.3f}")
 
-    #     # Compare global and top account ratios
-    #     correlation = global_long_short_ratio_df['longShortRatio'].corr(top_long_short_ratio_df['longShortRatio'])
-    #     print(f"\nCorrelation between Global and Top Accounts Long/Short Ratios: {correlation:.3f}")
+        # Compare global and top account ratios
+        correlation = global_long_short_ratio_df['longShortRatio'].corr(top_long_short_ratio_df['longShortRatio'])
+        print(f"\nCorrelation between Global and Top Accounts Long/Short Ratios: {correlation:.3f}")
             
     except CoinglassRequestError as e:
         print(f"Request error: {e}")

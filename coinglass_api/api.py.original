@@ -664,6 +664,25 @@ class CoinglassAPIv3(CoinglassParameterValidation):
         self._check_for_errors(response)
         return response["data"]
 
+    #   previous iteration of the function 
+    # def liquidation_heatmap_model2(self, exchange: str = "Binance", symbol: str = "BTCUSDT", range: str = "3d") -> dict:
+    #     """
+    #     Fetch liquidation levels data for heatmap visualization.
+
+    #     Args:
+    #         exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+    #         symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+    #         range: Time range for data. Options: "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y". Defaults to "3d".
+
+    #     Returns:
+    #         dict: Contains 'y' (price list), 'liq' (liquidation data), and 'prices' (OHLC data)
+    #     """
+    #     endpoint = "liquidation/model2/heatmap"
+    #     params = {"exchange": exchange, "symbol": symbol, "range": range}
+    #     response = self._get(endpoint, params=params)
+    #     self._check_for_errors(response)
+    #     return response["data"]
+    
     def liquidation_heatmap_model2(self, exchange: str = "Binance", symbol: str = "BTCUSDT", range: str = "3d") -> dict:
         """
         Fetch liquidation levels data for heatmap visualization.
@@ -715,7 +734,53 @@ class CoinglassAPIv3(CoinglassParameterValidation):
             'ohlc': ohlc
         }
         
-    
+    def liquidation_heatmap_model2_old(self, exchange: str = "Binance", symbol: str = "BTCUSDT", range: str = "3d") -> dict:
+        """
+        Fetch liquidation levels data for heatmap visualization and export for Power BI.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            range: Time range for data. Options: "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y". Defaults to "3d".
+
+        Returns:
+            dict: Contains 'price_levels' (DataFrame), 'liquidations' (DataFrame), and 'ohlc' (DataFrame)
+        """
+        endpoint = "liquidation/model2/heatmap"
+        params = {"exchange": exchange, "symbol": symbol, "range": range}
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+
+        # Create DataFrame for price levels
+        price_levels = pd.DataFrame({'price': data['y']})
+
+        # Create DataFrame for liquidation data
+        liquidations = pd.DataFrame(data['liq'], columns=['time_index', 'price_index', 'liquidation_value'])
+        liquidations['price'] = liquidations['price_index'].map(lambda x: data['y'][x])
+
+        # Create DataFrame for OHLC data
+        ohlc = pd.DataFrame(data['prices'], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        ohlc['timestamp'] = pd.to_datetime(ohlc['timestamp'], unit='s')
+        ohlc.set_index('timestamp', inplace=True)
+
+        # Prepare data for Power BI
+        power_bi_data = liquidations.merge(ohlc, left_on='time_index', right_index=True, how='left')
+        power_bi_data['date'] = power_bi_data.index
+        power_bi_data['exchange'] = exchange
+        power_bi_data['symbol'] = symbol
+
+        # Export data to CSV for Power BI
+        csv_filename = f"images/{exchange}_{symbol}_liquidation_heatmap_{range}.csv"
+        power_bi_data.to_csv(csv_filename, index=False)
+        print(f"Data exported to {csv_filename} for Power BI")
+
+        return {
+            'price_levels': price_levels,
+            'liquidations': liquidations,
+            'ohlc': ohlc,
+            'power_bi_data': power_bi_data
+        }
 
 ##    
 ## Long Short Account Ratio Section
@@ -794,40 +859,720 @@ class CoinglassAPIv3(CoinglassParameterValidation):
         self._check_for_errors(response)
         data = response["data"]
         return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
-    
-    def top_long_short_position_ratio_history(
-        self,
-        exchange: str = "Binance",
-        symbol: str = "BTCUSDT",
-        interval: str = "h1",
-        limit: int = 500,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None
-    ) -> pd.DataFrame:
-        """
-        Retrieve historical data for the long/short ratio of positions by top accounts.
+##
+##    
+## Cem Ended here
+##    
+## Cem Ended here
+    def perpetual_market(self, symbol: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="perpetual_market",
+            params={"symbol": symbol}
+        )
+        self._check_for_errors(response)
+        data = response["data"][symbol]
+        return self._create_dataframe(data)
 
-        Args:
-            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
-            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
-            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
-            limit: Number of data points to return. Default 500, Max 4500.
-            start_time: Start time in seconds (optional).
-            end_time: End time in seconds (optional).
+    def futures_market(self, symbol: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="futures_market",
+            params={"symbol": symbol}
+        )
+        self._check_for_errors(response)
+        data = response["data"][symbol]
+        return self._create_dataframe(data)
 
-        Returns:
-            pandas DataFrame with top accounts long/short ratio data.
-        """
-        endpoint = "topLongShortPositionRatio/history"
-        params = {
-            "exchange": exchange,
-            "symbol": symbol,
-            "interval": interval,
-            "limit": limit,
-            "startTime": start_time,
-            "endTime": end_time
-        }
-        response = self._get(endpoint, params=params)
+    def funding_rate(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="funding",
+        )
         self._check_for_errors(response)
         data = response["data"]
-        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+        return self._create_multiindex_dataframe(data, list_key="symbol")
+
+    def funding_usd_history(self, symbol: str, time_type: str) -> list[dict]:
+        """
+        Get funding history in USD for a coin
+
+        Args:
+            symbol: Coin symbol (e.g. BTC)
+            time_type: Time type (e.g. m1, m5, h8)
+
+        Returns:
+            List of dicts
+        """
+        response = self._get(
+            endpoint="funding_usd_history",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return data
+
+    def funding_coin_history(self, symbol: str, time_type: str) -> list[dict]:
+        """
+        Get funding history in coin for a coin
+
+        Args:
+            symbol: Coin symbol (e.g. BTC)
+            time_type: Time type (e.g. m1, m5, h8)
+
+        Returns:
+            List of dicts
+        """
+        response = self._get(
+            endpoint="funding_coin_history",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return data
+
+       
+
+    def option(self, symbol: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="option",
+            params={"symbol": symbol}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+
+    def option_history(self, symbol: str, currency: str) -> pd.DataFrame:
+        """
+        Get option history
+
+        Args:
+            symbol: Coin symbol (e.g. BTC)
+            currency: Currency (e.g. USD or symbol)
+
+        Returns:
+            pandas DataFrame
+        """
+        response = self._get(
+            endpoint="option_history",
+            params={"symbol": symbol, "currency": currency}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(self._flatten_dictionary(data[0]))
+        df["time"] = pd.to_datetime(df["dateList"][0], unit="ms")
+        df.drop(columns=["dateList"], inplace=True, level=0)
+        df.set_index("time", inplace=True, drop=True)
+        return df
+
+    def option_vol_history(self, symbol: str, currency: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="option/vol/history",
+            params={"symbol": symbol, "currency": currency}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(self._flatten_dictionary(data))
+        df["time"] = pd.to_datetime(df["dateList"][0], unit="ms")
+        df.drop(columns=["dateList"], inplace=True, level=0)
+        df.set_index("time", inplace=True, drop=True)
+        return df
+
+    def top_liquidations(self, time_type: str) -> pd.DataFrame:
+        """
+        Get top liquidations
+
+        Args:
+            time_type: Time type (e.g. h1, h4, h12, h24)
+
+        Returns:
+            pandas DataFrame
+        """
+        response = self._get(
+            endpoint="liquidation_top",
+            params={"time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+
+    def liquidation_map(self, symbol: str, interval: str) -> dict:
+        response = self._get(
+            endpoint="liqMap",
+            params={"symbol": symbol, "interval": interval}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return data
+
+    def liquidation_info(self, symbol: str, time_type: str) -> dict:
+        response = self._get(
+            endpoint="liquidation_info",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return data
+
+    def liquidation_order(
+            self,
+            ex_name: str,
+            coin: str,
+            vol_usd: str,
+            start_time: int,
+            end_time: int
+    ) -> dict:
+        response = self._get(
+            endpoint="liqMap",
+            params={"ex_name": ex_name, "coin": coin, "vol_usd": vol_usd,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return data
+
+    def exchange_liquidations(self, symbol: str, time_type: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="liquidation_ex",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+
+    def liquidations_history(self, symbol: str, time_type: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="liquidation_history",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        # TODO: Improve formatting
+        return self._create_multiindex_dataframe(data, list_key="createTime")
+
+    def exchange_long_short_ratio(self, symbol: str, time_type: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="long_short",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        # TODO: Improve formatting
+        return self._create_multiindex_dataframe(data, list_key="symbol")
+
+    def long_short_ratio_history(self, symbol: str, time_type: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="long_short_history",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="dateList")
+
+    def futures_coins_markets(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="futures_coins_markets",
+            params={}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+
+    def futures_coins_price_change(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="futures_coins_price_change",
+            params={}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+
+    def futures_basis_chart(self, symbol: str) -> pd.DataFrame:
+        response = self._get(
+            endpoint="futures_basis_chart",
+            params={"symbol": symbol}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+
+        flattened_data = {}
+
+        # Flatten nested dicts
+        for symbol_data in data:
+            flattened_dict = {}
+            for outer_key, outer_value in symbol_data.items():
+                if isinstance(outer_value, dict):
+                    for inner_key, value in outer_value.items():
+                        flattened_dict[(outer_key, inner_key)] = value
+                else:
+                    flattened_dict[outer_key] = outer_value
+
+            # Remove non-tuple keys
+            remove_keys = []
+            for key in list(flattened_dict.keys()):
+                if not isinstance(key, tuple):
+                    remove_keys.append(key)
+
+            for k in remove_keys:
+                flattened_dict.pop(k, None)
+
+            df = pd.DataFrame.from_dict(flattened_dict, orient="index")
+            df.index = pd.MultiIndex.from_tuples(df.index)
+
+            flattened_data[symbol_data["exName"]] = df
+
+        return pd.concat(flattened_data, axis=1)
+
+    def futures_vol(self, symbol: str, time_type: str) -> pd.DataFrame:
+        """
+        Get futures volume
+
+        Args:
+            symbol: Coin symbol (e.g. BTC, ETH, LTC, etc.)
+            time_type: Time type (e.g. h1, h4, h12, h24, all)
+
+        Returns:
+            pandas DataFrame
+        """
+        response = self._get(
+            endpoint="futures_vol",
+            params={"symbol": symbol, "time_type": time_type}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(self._flatten_dictionary(data))
+        df["time"] = pd.to_datetime(df["dateList"][0], unit="ms")
+        df.drop(columns=["dateList"], inplace=True, level=0)
+        df.set_index("time", inplace=True, drop=True)
+        return df
+
+    def funding(
+            self,
+            ex: str,
+            pair: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Funding rate for a given pair
+
+        Args:
+            ex: exchange to get funding rate (e.g. Binance, dYdX, etc.)
+            pair: pair to get funding rate (e.g. BTCUSDT on Binance, BTC-USD on dYdX)
+            interval: interval to get funding rate (e.g. m1, m5, m15, m30, h1, h4, etc.)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with funding rate
+        """
+        response = self._get(
+            endpoint="indicator/funding",
+            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def funding_ohlc(
+            self,
+            ex: str,
+            pair: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Funding rate in OHLC format for an exchange pair
+
+        Args:
+            ex: exchange to get funding rate (e.g. Binance, dYdX, etc.)
+            pair: pair to get funding rate (e.g. BTCUSDT on Binance, BTC-USD on dYdX)
+            interval: interval to get funding rate (e.g. m1, m5, m15, m30, h1, h4)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with funding rate in OHLC format for an exchange pair
+        """
+        response = self._get(
+            endpoint="indicator/funding_ohlc",
+            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t")
+
+    def funding_average(
+            self,
+            symbol: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Average funding rate for a symbol
+
+        Args:
+            symbol: symbol to get funding rate for
+            interval: interval to get funding rate (e.g. m1, m5, m15, m30, h1, h4, etc.)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with funding rate
+        """
+        response = self._get(
+            endpoint="indicator/funding_avg",
+            params={"symbol": symbol, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def open_interest_ohlc(
+            self,
+            ex: str,
+            pair: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Open interest in OHLC format for an exchange pair
+
+        Args:
+            ex: exchange to get OI for (e.g. Binance, dYdX, etc.)
+            pair: pair to get OI for (e.g. BTCUSDT on Binance, BTC-USD on dYdX, etc.)
+            interval: interval to get OI for (e.g. m1, m5, m15, m30, h1, h4, etc.)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with open interest in OHLC format for an exchange pair
+        """
+        response = self._get(
+            endpoint="indicator/open_interest_ohlc",
+            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t")
+
+    def open_interest_aggregated_ohlc(
+            self,
+            symbol: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Aggregated open interest in OHLC format for a symbol
+
+        Args:
+            symbol: symbol to get OI for
+            interval: interval to get OI for (e.g. m1, m5, m15, m30, h1, h4, etc.)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with aggregated open interest in OHLC format
+        """
+        response = self._get(
+            endpoint="indicator/open_interest_aggregated_ohlc",
+            params={"symbol": symbol, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t")
+
+    def liquidation_symbol(
+            self,
+            symbol: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Liquidation data for a symbol
+
+        Args:
+            symbol: symbol to get liquidation data for
+            interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with liquidation data
+        """
+        response = self._get(
+            endpoint="indicator/liquidation_symbol",
+            params={"symbol": symbol, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def liquidation_pair(
+            self,
+            ex: str,
+            pair: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Liquidation data for an exchange pair
+
+        Args:
+            ex: exchange to get liquidation data for (e.g. Binance, dYdX, etc.)
+            pair: pair to get liquidation data (e.g. BTCUSDT on Binance,BTC-USD on dYdX)
+            interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with liquidation data for an exchange pair
+        """
+        response = self._get(
+            endpoint="indicator/liquidation_pair",
+            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t")
+
+    def long_short_accounts(
+            self,
+            ex: str,
+            pair: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Long/short ratio for an exchange pair
+
+        Args:
+            ex: exchange to get liquidation data for (e.g. Binance, dYdX, etc.)
+            pair: pair to get liquidation data (e.g. BTCUSDT on Binance,BTC-USD on dYdX)
+            interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with long/short ratio for an exchange pair
+        """
+        response = self._get(
+            endpoint="indicator/long_short_accounts",
+            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def long_short_symbol(
+            self,
+            symbol: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Long/short ratio for a symbol
+
+        Args:
+            symbol: symbol to get long/short ratio for
+            interval: interval to get long/short ratio (e.g. m1, m5, m15, m30, h1, h4)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with long/short ratio
+        """
+        response = self._get(
+            endpoint="indicator/long_short_symbol",
+            params={"symbol": symbol, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="t")
+
+    # def top_long_short_account_ratio(
+    #         self,
+    #         ex: str,
+    #         pair: str,
+    #         interval: str,
+    #         limit: int = 500,
+    #         start_time: Optional[int] = None,
+    #         end_time: Optional[int] = None
+    # ) -> pd.DataFrame:
+    #     """
+    #     Top accounts long/short ratio for an exchange pair
+
+    #     Args:
+    #         ex: exchange to get liquidation data for (e.g. Binance, dYdX, etc.)
+    #         pair: pair to get liquidation data (e.g. BTCUSDT on Binance,BTC-USD on dYdX)
+    #         interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
+    #         limit: number of data points to return (default: 500)
+    #         start_time: start time in milliseconds
+    #         end_time: end time in milliseconds
+
+    #     Returns:
+    #         pandas DataFrame with top accounts long/short ratio for an exchange pair
+    #     """
+    #     response = self._get(
+    #         endpoint="indicator/top_long_short_account_ratio",
+    #         params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+    #                 "start_time": start_time, "end_time": end_time}
+    #     )
+    #     self._check_for_errors(response)
+    #     data = response["data"]
+    #     return self._create_dataframe(data, time_col="createTime")
+
+    def top_long_short_position_ratio(
+            self,
+            ex: str,
+            pair: str,
+            interval: str,
+            limit: int = 500,
+            start_time: Optional[int] = None,
+            end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Top positions long/short ratio for an exchange pair
+
+        Args:
+            ex: exchange to get liquidation data for (e.g. Binance, dYdX, etc.)
+            pair: pair to get liquidation data (e.g. BTCUSDT on Binance,BTC-USD on dYdX)
+            interval: interval to get liquidation data (e.g. m1, m5, m15, m30, h1, h4)
+            limit: number of data points to return (default: 500)
+            start_time: start time in milliseconds
+            end_time: end time in milliseconds
+
+        Returns:
+            pandas DataFrame with top positions long/short ratio for an exchange pair
+        """
+        response = self._get(
+            endpoint="indicator/top_long_short_position_ratio",
+            params={"ex": ex, "pair": pair, "interval": interval, "limit": limit,
+                    "start_time": start_time, "end_time": end_time}
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def bitcoin_bubble_index(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/bitcoin_bubble_index",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit=None)
+
+    def ahr999(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/ahr999",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="date", unit=None)
+
+    def tow_year_ma_multiplier(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/tow_year_MA_multiplier",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def tow_hundred_week_moving_avg_heatmap(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/tow_hundred_week_moving_avg_heatmap",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def puell_multiple(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/puell_multiple",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def stock_flow(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/stock_flow",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime", unit=None)
+
+    def pi(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/pi",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime",
+                                      cast_objects_to_numeric=True)
+
+    def golden_ratio_multiplier(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/golden_ratio_multiplier",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime",
+                                      cast_objects_to_numeric=True)
+
+    def bitcoin_profitable_days(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/bitcoin_profitable_days",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="createTime")
+
+    def log_log_regression(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/log_log_regression",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data)
+
+    def grayscale_market_history(self) -> pd.DataFrame:
+        response = self._get(
+            endpoint="index/grayscale_market_history",
+        )
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="dateList")
