@@ -9,6 +9,7 @@ __pycache__/
 *.so
 
 images/*
+!images/btc_liquidation_heatmap_v2_1y.png
 
 # Distribution / packaging
 .Python
