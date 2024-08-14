@@ -15,7 +15,7 @@ class CoinglassParameterValidation:
             '1d', '7d'
         ]
         
-        self._ranges = ["all", "1m", "15m", "4h", "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y"]
+        self._ranges = ["all", "1m", "15m", "1h", "4h", "12h", "24h", "3d", "7d", "30d", "90d", "180d", "1y"]
         self._units = ["USD", "COIN"]
 
     def add_exchange(self, exchange: str):

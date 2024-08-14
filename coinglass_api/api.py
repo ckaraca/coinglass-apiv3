@@ -26,10 +26,10 @@ class CoinglassAPIv3(CoinglassParameterValidation):
         super().__init__()
 
         self.__coinglass_secret = coinglass_secret
-        self._base_url = "https://open-api-v3.coinglass.com/api/futures/"
+        self._base_url = "https://open-api-v3.coinglass.com/api/"
         self._session = requests.Session()
 
-    def _get(self, endpoint: str, params: dict | None = None) -> dict:
+    def _get(self, endpoint: str, params: dict | None = None, api_type: str = "futures") -> dict:
         if params:
             self.validate_params(params)
 
@@ -37,7 +37,7 @@ class CoinglassAPIv3(CoinglassParameterValidation):
             "accept": "application/json",
             "CG-API-KEY": self.__coinglass_secret
         }
-        url = self._base_url + endpoint
+        url = f"{self._base_url}{api_type}/{endpoint}"
         return self._session.request(
             method='GET',
             url=url,
@@ -828,6 +828,362 @@ class CoinglassAPIv3(CoinglassParameterValidation):
             "endTime": end_time
         }
         response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def aggregated_taker_buy_sell_volume_ratio_history(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "1h",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data for the long/short ratio of aggregated taker buy/sell volumes.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with long/short ratio data for aggregated taker buy/sell volumes
+        """
+        endpoint = "aggregatedTakerBuySellVolumeRatio/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def aggregated_taker_buy_sell_volume_history(
+        self,
+        exchanges: str = "Binance",
+        symbol: str = "BTC",
+        interval: str = "1h",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data for the aggregated taker buy/sell volumes.
+
+        Args:
+            exchanges: Comma-separated list of exchange names (e.g., "Binance,OKX,Bybit"). Defaults to "Binance".
+            symbol: Trading coin (e.g., BTC). Defaults to BTC.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with buy and sell volume data
+        """
+        endpoint = "aggregatedTakerBuySellVolume/history"
+        params = {
+            "exchanges": exchanges,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def taker_buy_sell_volume_history(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "1h",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data for the taker buy/sell volumes for a specific exchange and trading pair.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with buy and sell volume data
+        """
+        endpoint = "takerBuySellVolume/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def exchange_taker_buy_sell_ratio(self, symbol: str = "BTC", range: str = "1h") -> dict:
+        """
+        Retrieve the long/short ratio of aggregated taker buy/sell volumes for exchanges.
+
+        Args:
+            symbol: Trading coin (e.g., BTC). Defaults to BTC.
+            range: Time range for data. Options: "5m", "15m", "30m", "1h", "4h", "12h", "24h". Defaults to "1h".
+
+        Returns:
+            dict: Contains overall data and list of exchange-specific data
+        """
+        endpoint = "takerBuySellVolume/exchange-list"
+        params = {"symbol": symbol, "range": range}
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        return response["data"]
+## GLOBAL SECTION
+##
+##
+    # Requires Standard API Key
+    def coins_markets(self, exchanges: str = "Binance,OKX", page_num: int = 1, page_size: int = 100) -> pd.DataFrame:
+        """
+        Retrieve performance-related information for all available coins.
+
+        Args:
+            exchanges: Comma-separated list of exchange names. Defaults to "Binance,OKX".
+            page_num: Page number for pagination. Defaults to 1.
+            page_size: Number of items per page. Defaults to 100.
+
+        Returns:
+            pandas DataFrame containing coin market data
+        """
+        endpoint = "coins-markets"
+        params = {
+            "exchanges": exchanges,
+            "pageNum": page_num,
+            "pageSize": page_size
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return pd.DataFrame(data)
+    
+    def pairs_markets(self, symbol: str = "BTC") -> pd.DataFrame:
+        """
+        Retrieve performance-related information for all available trading pairs of a specific coin.
+
+        Args:
+            symbol: Symbol of the coin (e.g., "BTC"). Defaults to "BTC".
+
+        Returns:
+            pandas DataFrame containing pairs market data
+        """
+        endpoint = "pairs-markets"
+        params = {"symbol": symbol}
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        
+        # Extract the nested data
+        nested_data = response.get("data", {})
+        if isinstance(nested_data, dict) and "data" in nested_data:
+            data = nested_data["data"]
+        else:
+            raise CoinglassAPIError(status=500, err="Unexpected data structure in API response")
+        
+        if not data:
+            raise NoDataReturnedError()
+        
+        return pd.DataFrame(data)
+    
+    def orderbook_history(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "1h",
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data of the order book for futures trading.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX)
+            symbol: Trading pair (e.g., BTCUSDT)
+            interval: Time interval (e.g., 1h, 4h, 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            start_time: Start time in seconds (optional)
+            end_time: End time in seconds (optional)
+
+        Returns:
+            pandas DataFrame with orderbook history data
+        """
+        endpoint = "orderbook/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def aggregated_orderbook_history(
+        self,
+        exchanges: str = "Binance",
+        symbol: str = "BTC",
+        interval: str = "1h",
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data of the aggregated order book for futures trading.
+
+        Args:
+            exchanges: Comma-separated list of exchange names (e.g., "Binance,OKX,Bybit")
+            symbol: Trading coin (e.g., BTC)
+            interval: Time interval (e.g., 1h, 4h, 1d)
+            limit: Number of data points to return (default 1000, max 4500)
+            start_time: Start time in seconds (optional)
+            end_time: End time in seconds (optional)
+
+        Returns:
+            pandas DataFrame with aggregated orderbook history data
+        """
+        endpoint = "orderbook/aggregated-history"
+        params = {
+            "exchanges": exchanges,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params)
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+## SPOT SECTION
+##
+    def spot_supported_coins(self) -> list:
+        """
+        Retrieve the list of supported coins for spot trading.
+
+        Returns:
+            list: A list of supported coin symbols
+        """
+        endpoint = "supported-coins"
+        response = self._get(endpoint, api_type="spot")
+        self._check_for_errors(response)
+        return response["data"]
+    
+    def spot_supported_exchange_pairs(self) -> dict:
+        """
+        Retrieve the supported exchanges and their trading pairs for spot trading.
+
+        Returns:
+            dict: A dictionary where keys are exchange names and values are lists of dictionaries
+                  containing information about supported trading pairs.
+        """
+        endpoint = "supported-exchange-pairs"
+        response = self._get(endpoint, api_type="spot")
+        self._check_for_errors(response)
+        return response["data"]
+    
+    def spot_taker_buy_sell_volume_history(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "1h",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data for the long/short ratio of taker buy/sell volumes in spot markets.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with taker buy/sell volume data for spot markets
+        """
+        endpoint = "takerBuySellVolume/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params, api_type="spot")
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def spot_aggregated_taker_buy_sell_volume_history(
+        self,
+        exchanges: str = "Binance",
+        symbol: str = "BTC",
+        interval: str = "1h",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data for the aggregated taker buy/sell volumes in spot markets.
+
+        Args:
+            exchanges: Comma-separated list of exchange names (e.g., "Binance,OKX,Bybit"). Defaults to "Binance".
+            symbol: Trading coin (e.g., BTC). Defaults to BTC.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with aggregated taker buy/sell volume data for spot markets
+        """
+        endpoint = "aggregatedTakerBuySellVolume/history"
+        params = {
+            "exchanges": exchanges,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params, api_type="spot")
         self._check_for_errors(response)
         data = response["data"]
         return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
