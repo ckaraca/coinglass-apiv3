@@ -4,3 +4,4 @@ pandas==2.1.1
 seaborn==0.12.2
 numpy==1.26.0
 setuptools>=65.5.1
+mplfinance==0.12.9b7
