@@ -1187,3 +1187,261 @@ class CoinglassAPIv3(CoinglassParameterValidation):
         self._check_for_errors(response)
         data = response["data"]
         return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def spot_orderbook_history(
+        self,
+        exchange: str = "Binance",
+        symbol: str = "BTCUSDT",
+        interval: str = "1d",
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data of the order book for spot trading.
+
+        Args:
+            exchange: Exchange name (e.g., Binance, OKX). Defaults to Binance.
+            symbol: Trading pair (e.g., BTCUSDT). Defaults to BTCUSDT.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1d.
+            limit: Number of data points to return. Default 1000, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with spot orderbook history data
+        """
+        endpoint = "orderbook/history"
+        params = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params, api_type="spot")
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def spot_aggregated_orderbook_history(
+        self,
+        exchanges: str = "Binance,OKX,Bybit",
+        symbol: str = "BTC",
+        interval: str = "1h",
+        limit: int = 500,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve historical data of the aggregated order book for spot trading.
+
+        Args:
+            exchanges: Comma-separated list of exchange names. Defaults to "Binance,OKX,Bybit".
+            symbol: Trading coin (e.g., BTC). Defaults to BTC.
+            interval: Time interval. Options: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 6h, 8h, 12h, 1d, 1w. Defaults to 1h.
+            limit: Number of data points to return. Default 500, Max 4500.
+            start_time: Start time in seconds (optional).
+            end_time: End time in seconds (optional).
+
+        Returns:
+            pandas DataFrame with aggregated spot orderbook history data
+        """
+        endpoint = "orderbook/aggregated-history"
+        params = {
+            "exchanges": exchanges,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        response = self._get(endpoint, params=params, api_type="spot")
+        self._check_for_errors(response)
+        data = response["data"]
+        return self._create_dataframe(data, time_col="time", unit="s", cast_objects_to_numeric=True)
+    
+    def spot_pairs_markets(self, symbol: str = "BTC") -> pd.DataFrame:
+        """
+        Retrieve performance-related information for all available spot trading pairs of a specific coin.
+
+        Args:
+            symbol: Symbol of the coin (e.g., "BTC"). Defaults to "BTC".
+
+        Returns:
+            pandas DataFrame containing spot pairs market data
+        """
+        endpoint = "pairs-markets"
+        params = {"symbol": symbol}
+        response = self._get(endpoint, params=params, api_type="spot")
+        self._check_for_errors(response)
+        data = response["data"]
+        return pd.DataFrame(data)
+##
+## INDICATOR SECTION
+##
+    def bitcoin_bubble_index(self) -> pd.DataFrame:
+        """
+        Fetch the Bitcoin Bubble Index data.
+
+        Returns:
+            pandas DataFrame with Bitcoin Bubble Index data
+        """
+        endpoint = "bitcoin-bubble-index"
+        #response = self._get(endpoint)
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+        return df
+    
+    def ahr999_index(self) -> pd.DataFrame:
+        """
+        Fetch the AHR999 index data.
+
+        Returns:
+            pandas DataFrame with AHR999 index data
+        """
+        endpoint = "ahr999"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+        return df
+    
+    def two_year_ma_multiplier(self) -> pd.DataFrame:
+        """
+        Fetch the Two Year MA Multiplier data.
+
+        Returns:
+            pandas DataFrame with Two Year MA Multiplier data
+        """
+        endpoint = "tow-year-ma-multiplier"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'], unit='ms')
+        df.set_index('createTime', inplace=True)
+        return df
+    
+    def two_hundred_week_moving_avg_heatmap(self) -> pd.DataFrame:
+        """
+        Fetch the 200-Week Moving Average Heatmap data.
+        """
+        endpoint = "tow-hundred-week-moving-avg-heatmap"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'], unit='ms')
+        df.set_index('createTime', inplace=True)
+        return df
+
+    def puell_multiple(self) -> pd.DataFrame:
+        """
+        Fetch the Puell Multiple data.
+        """
+        endpoint = "puell-multiple"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'], unit='ms')
+        df.set_index('createTime', inplace=True)
+        return df
+
+    def stock_to_flow(self) -> pd.DataFrame:
+        """
+        Fetch the Stock-to-Flow Model data.
+        """
+        endpoint = "stock-flow"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'])
+        df.set_index('createTime', inplace=True)
+        return df
+
+    def pi_cycle_top_indicator(self) -> pd.DataFrame:
+        """
+        Fetch the Pi Cycle Top Indicator data.
+        """
+        endpoint = "pi"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'], unit='ms')
+        df.set_index('createTime', inplace=True)
+        return df
+    
+    def golden_ratio_multiplier(self) -> pd.DataFrame:
+        """
+        Fetch the Golden Ratio Multiplier data.
+        """
+        endpoint = "golden-ratio-multiplier"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'], unit='ms')
+        df.set_index('createTime', inplace=True)
+        return df
+    
+    def bitcoin_profitable_days(self) -> pd.DataFrame:
+        """
+        Fetch the Bitcoin Profitable Days data.
+        """
+        endpoint = "bitcoin-profitable-days"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data)
+        df['createTime'] = pd.to_datetime(df['createTime'], unit='ms')
+        df.set_index('createTime', inplace=True)
+        return df
+    
+    def bitcoin_rainbow_chart(self) -> pd.DataFrame:
+        """
+        Fetch the Bitcoin Rainbow Chart data.
+        """
+        endpoint = "bitcoin-rainbow-chart"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        df = pd.DataFrame(data, columns=['price', 'model_price', 'fire_sale', 'buy', 'accumulate', 'still_cheap', 'hold', 'is_this_a_bubble', 'fomo_intensifies', 'sell_seriously_sell', 'maximum_bubble_territory', 'timestamp'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df.set_index('timestamp', inplace=True)
+        return df
+    
+    def fear_greed_index(self) -> pd.DataFrame:
+        """
+        Fetch the Crypto Fear & Greed Index data.
+        """
+        endpoint = "fear-greed-history"
+        response = self._get(endpoint, api_type="index")
+        self._check_for_errors(response)
+        data = response["data"]
+        
+        # Check if the expected keys are in the data
+        if not all(key in data for key in ['values', 'dates']):
+            raise ValueError("Unexpected data structure in Fear & Greed Index response")
+        
+        df = pd.DataFrame({
+            'values': data['values'],
+            'dates': pd.to_datetime(data['dates'], unit='ms')  # Changed 's' to 'ms'
+        })
+        df.set_index('dates', inplace=True)
+        
+        # If 'prices' data is available, include it (note the plural 'prices')
+        if 'prices' in data:
+            df['price'] = data['prices']
+        
+        return df

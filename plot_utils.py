@@ -724,4 +724,418 @@ def plot_spot_aggregated_taker_buy_sell_volume(df: pd.DataFrame, title: str, fil
     plt.savefig(f"images/{filename}_heatmap.png")
     plt.close()
     
+def plot_spot_orderbook_history(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot spot orderbook history data.
+
+    Args:
+        df: DataFrame containing spot orderbook history data
+        title: Title for the plot
+        filename: Filename to save the plot
+    """
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
     
+    # Plot bids and asks
+    ax1.plot(df.index, df['bidsUsd'], label='Bids', color='green')
+    ax1.plot(df.index, df['asksUsd'], label='Asks', color='red')
+    ax1.set_title(f"{title} - Bids and Asks")
+    ax1.set_ylabel("USD Value")
+    ax1.legend()
+    ax1.grid(True)
+
+    # Plot bid/ask ratio
+    ratio = df['bidsUsd'] / df['asksUsd']
+    ax2.plot(df.index, ratio, label='Bid/Ask Ratio', color='blue')
+    ax2.axhline(y=1, color='r', linestyle='--', label='Equilibrium')
+    ax2.set_title(f"{title} - Bid/Ask Ratio")
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("Ratio")
+    ax2.legend()
+    ax2.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+
+    # Plot amounts
+    plt.figure(figsize=(12, 6))
+    plt.plot(df.index, df['bidsAmount'], label='Bid Amount', color='green')
+    plt.plot(df.index, df['asksAmount'], label='Ask Amount', color='red')
+    plt.title(f"{title} - Bid and Ask Amounts")
+    plt.xlabel("Date")
+    plt.ylabel("Amount")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_amounts.png")
+    plt.close()
+    
+def plot_spot_orderbook_history(df: pd.DataFrame, title: str, filename: str, aggregated: bool = False):
+    """
+    Plot spot orderbook history data, either for a single exchange or aggregated.
+
+    Args:
+        df: DataFrame containing spot orderbook history data
+        title: Title for the plot
+        filename: Filename to save the plot
+        aggregated: Boolean indicating if the data is aggregated across exchanges
+    """
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+    
+    # Plot bids and asks
+    ax1.plot(df.index, df['bidsUsd'], label='Bids', color='green')
+    ax1.plot(df.index, df['asksUsd'], label='Asks', color='red')
+    ax1.set_title(f"{title} - {'Aggregated ' if aggregated else ''}Bids and Asks")
+    ax1.set_ylabel("USD Value")
+    ax1.legend()
+    ax1.grid(True)
+
+    # Plot bid/ask ratio
+    ratio = df['bidsUsd'] / df['asksUsd']
+    ax2.plot(df.index, ratio, label='Bid/Ask Ratio', color='blue')
+    ax2.axhline(y=1, color='r', linestyle='--', label='Equilibrium')
+    ax2.set_title(f"{title} - {'Aggregated ' if aggregated else ''}Bid/Ask Ratio")
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("Ratio")
+    ax2.legend()
+    ax2.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+
+    # Plot amounts
+    plt.figure(figsize=(12, 6))
+    plt.plot(df.index, df['bidsAmount'], label='Bid Amount', color='green')
+    plt.plot(df.index, df['asksAmount'], label='Ask Amount', color='red')
+    plt.title(f"{title} - {'Aggregated ' if aggregated else ''}Bid and Ask Amounts")
+    plt.xlabel("Date")
+    plt.ylabel("Amount")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}_amounts.png")
+    plt.close()    
+
+def plot_spot_pairs_markets(df: pd.DataFrame, title_prefix: str, filename_prefix: str):
+    """
+    Create multiple plots for spot pairs market data.
+
+    Args:
+        df: DataFrame containing spot pairs market data
+        title_prefix: Prefix for plot titles
+        filename_prefix: Prefix for saved plot filenames
+    """
+    # Trading Volume by Exchange
+    plt.figure(figsize=(12, 8))
+    sns.barplot(data=df, x='exName', y='volUsd24h', hue='symbol')
+    plt.title(f"{title_prefix} - Trading Volume by Exchange (24h)")
+    plt.xlabel("Exchange")
+    plt.ylabel("24h Volume (USD)")
+    plt.xticks(rotation=45)
+    plt.legend(title="Symbol", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.savefig(f"images/{filename_prefix}_volume_by_exchange.png")
+    plt.close()
+
+    # Price Change Percentage (24h)
+    plt.figure(figsize=(12, 8))
+    sns.barplot(data=df, x='symbol', y='priceChangePercent24h')
+    plt.title(f"{title_prefix} - Price Change Percentage (24h)")
+    plt.xlabel("Symbol")
+    plt.ylabel("Price Change (%)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename_prefix}_price_change_percentage.png")
+    plt.close()
+
+    # Buy/Sell Volume Ratio (24h)
+    df['buySellRatio24h'] = df['buyVolUsd24h'] / df['sellVolUsd24h']
+    plt.figure(figsize=(12, 8))
+    sns.barplot(data=df, x='symbol', y='buySellRatio24h')
+    plt.title(f"{title_prefix} - Buy/Sell Volume Ratio (24h)")
+    plt.xlabel("Symbol")
+    plt.ylabel("Buy/Sell Ratio")
+    plt.axhline(y=1, color='r', linestyle='--')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename_prefix}_buy_sell_ratio.png")
+    plt.close()
+
+    # Volume Change Percentage (24h)
+    plt.figure(figsize=(12, 8))
+    sns.scatterplot(data=df, x='priceChangePercent24h', y='volUsdChangePercent24h', hue='exName', size='volUsd24h', sizes=(20, 500))
+    plt.title(f"{title_prefix} - Price vs Volume Change Percentage (24h)")
+    plt.xlabel("Price Change (%)")
+    plt.ylabel("Volume Change (%)")
+    plt.legend(title="Exchange", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.savefig(f"images/{filename_prefix}_price_volume_change.png")
+    plt.close()
+    
+def plot_bitcoin_bubble_index(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot Bitcoin Bubble Index data.
+
+    Args:
+        df: DataFrame containing Bitcoin Bubble Index data
+        title: Title for the plot
+        filename: Filename to save the plot
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    color = 'tab:red'
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Bitcoin Bubble Index', color=color)
+    ax1.plot(df.index, df['index'], color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax2.set_ylabel('Price (USD)', color=color)
+    ax2.plot(df.index, df['price'], color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    plt.title(title)
+    fig.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+    
+def plot_ahr999_index(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot AHR999 index data.
+
+    Args:
+        df: DataFrame containing AHR999 index data
+        title: Title for the plot
+        filename: Filename to save the plot
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    color = 'tab:red'
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('AHR999 Index', color=color)
+    ax1.plot(df.index, df['ahr999'], color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax2.set_ylabel('Bitcoin Price (USD)', color=color)
+    ax2.plot(df.index, df['value'].astype(float), color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    plt.title(title)
+    fig.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+    
+def plot_two_year_ma_multiplier(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot Two Year MA Multiplier data.
+
+    Args:
+        df: DataFrame containing Two Year MA Multiplier data
+        title: Title for the plot
+        filename: Filename to save the plot
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Price (USD)', color='tab:blue')
+    ax1.plot(df.index, df['price'], color='tab:blue', label='Price')
+    ax1.plot(df.index, df['mA730'], color='tab:orange', label='2Y MA')
+    ax1.plot(df.index, df['mA730Mu5'], color='tab:red', label='2Y MA x5')
+    ax1.tick_params(axis='y', labelcolor='tab:blue')
+    ax1.set_yscale('log')
+
+    plt.title(title)
+    plt.legend()
+    fig.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+    
+def plot_200_week_ma_heatmap(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot 200-Week Moving Average Heatmap data.
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(df.index, df['price'], label='Price', color='blue')
+    ax.plot(df.index, df['mA1440'], label='200 WMA', color='red')
+    ax.set_yscale('log')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price (USD)')
+    ax.legend()
+    plt.title(title) 
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+
+def plot_puell_multiple(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot Puell Multiple data.
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    ax2 = ax1.twinx()
+    
+    ax1.plot(df.index, df['price'], label='Price', color='blue')
+    ax2.plot(df.index, df['puellMultiple'], label='Puell Multiple', color='red')
+    
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Price (USD)', color='blue')
+    ax2.set_ylabel('Puell Multiple', color='red')
+    ax1.set_yscale('log')
+    
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+    
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+
+def plot_stock_to_flow(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot Stock-to-Flow Model data.
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    ax2 = ax1.twinx()
+    
+    # Ensure the index is in datetime format
+    df.index = pd.to_datetime(df.index)
+    
+    # Filter out NaN values
+    df = df.dropna(subset=['price', 'stockFlow365dAverage'])
+    
+    # Plot price data
+    ax1.plot(df.index, df['price'].astype(float), label='BTC Price', color='blue')
+    
+    # Plot Stock-to-Flow data, including future projections
+    ax2.plot(df.index, df['stockFlow365dAverage'].astype(float), label='Stock/Flow', color='red')
+    
+    # Plot Model Variance if available
+    if 'modelVariance' in df.columns:
+        ax1.plot(df.index, df['modelVariance'].astype(float), label='Model Variance', color='green', alpha=0.5)
+    
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Price (USD)', color='blue')
+    ax2.set_ylabel('Stock-to-Flow', color='red')
+    ax1.set_yscale('log')
+    ax2.set_yscale('log')
+    
+    # Set x-axis to show full date range, including future projections
+    ax1.set_xlim(df.index.min(), df.index.max())
+    
+    # Combine legends
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+    
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+
+def plot_pi_cycle_top_indicator(df: pd.DataFrame, title: str, filename: str):
+    """
+    Plot Pi Cycle Top Indicator data.
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(df.index, df['price'].astype(float), label='Price', color='blue')
+    ax.plot(df.index, df['ma110'].astype(float), label='110 DMA', color='green')
+    ax.plot(df.index, df['ma350Mu2'].astype(float), label='350 DMA x2', color='red')
+    ax.set_yscale('log')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price (USD)')
+    ax.legend()
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+    
+def plot_golden_ratio_multiplier(df: pd.DataFrame, title: str, filename: str):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(df.index, df['price'].astype(float), label='Price', color='blue')
+    ax.plot(df.index, df['ma350'].astype(float), label='350 DMA', color='red')
+    ax.plot(df.index, df['x3'].astype(float), label='3x', color='green')
+    ax.plot(df.index, df['x5'].astype(float), label='5x', color='orange')
+    ax.plot(df.index, df['x8'].astype(float), label='8x', color='purple')
+    ax.set_yscale('log')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price (USD)')
+    ax.legend()
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+    
+def plot_bitcoin_profitable_days(df: pd.DataFrame, title: str, filename: str):
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    ax2 = ax1.twinx()
+    
+    ax1.plot(df.index, df['price'].astype(float), label='Price', color='blue')
+    ax2.plot(df.index, df['side'], label='Profitable', color='green')
+    
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Price (USD)', color='blue')
+    ax2.set_ylabel('Profitable (1) / Unprofitable (-1)', color='green')
+    ax1.set_yscale('log')
+    
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+    
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
+    
+def plot_bitcoin_rainbow_chart(df: pd.DataFrame, title: str, filename: str):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
+    labels = ['Maximum Bubble', 'Sell', 'FOMO', 'Is This a Bubble?', 'Hold', 'Still Cheap', 'Buy', 'Fire Sale']
+    
+    for i in range(7, 0, -1):
+        ax.fill_between(df.index, df.iloc[:, i], df.iloc[:, i+1], color=colors[i-1], alpha=0.1)
+    
+    ax.plot(df.index, df['price'], label='Price', color='black')
+    
+    ax.set_yscale('log')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price (USD)')
+    ax.legend(labels + ['Price'], loc='upper left')
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()    
+    
+def plot_fear_greed_index(df: pd.DataFrame, title: str, filename: str):
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    
+    ax1.plot(df.index, df['values'], label='Fear & Greed Index', color='red')
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Fear & Greed Index', color='red')
+    ax1.tick_params(axis='y', labelcolor='red')
+    
+    if 'price' in df.columns:
+        ax2 = ax1.twinx()
+        # Remove NaN values before plotting
+        price_data = df['price'].dropna()
+        ax2.plot(price_data.index, price_data, label='Price', color='blue')
+        ax2.set_ylabel('Price (USD)', color='blue')
+        ax2.tick_params(axis='y', labelcolor='blue')
+        ax2.set_yscale('log')
+        
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+    else:
+        ax1.legend(loc='upper left')
+    
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"images/{filename}.png")
+    plt.close()
