@@ -1,112 +1,179 @@
-# Coinglass API v3
+# Coinglass API Wrapper
 
-[![Python 3.10](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
+This project is a Flask-based API wrapper for the Coinglass API, providing a structured and easy-to-use interface to access cryptocurrency derivatives data.
 
-## Unofficial Python client for Coinglass API v3
+**&copy; 2024 Universal Business Technology. All Rights Reserved.**
 
-This project is a fork of the original [Coinglass API wrapper](https://github.com/dineshpinto/coinglass-api) by Dinesh Pinto, updated to support Coinglass API v3.
+---
 
-This wrapper fetches data about crypto derivatives from the [Coinglass API v3](https://coinglass.com/pricing). All data is output in pandas DataFrames (single or multi-index) and all time-series data uses a `DateTimeIndex`. It supports all Coinglass API v3 endpoints.
+## Project Overview
 
-## Installation
+This API acts as an intermediary between a web application and the official Coinglass API. It is designed to be deployed on a serverless platform like Vercel. The main purposes of this wrapper are:
 
-To use this project, follow these steps:
+*   **Secure API Key Management:** The Coinglass API key is stored securely as an environment variable on the server, never exposing it to the client-side application.
+*   **Data Transformation:** The API transforms data from the Coinglass Python library (which uses pandas DataFrames) into a standard JSON format that is easily consumable by web applications.
+*   **Simplified Endpoints:** It provides a clean and well-documented set of endpoints, abstracting the complexities of the underlying `coinglass_api` library.
+*   **Error Handling:** Implements robust error handling to provide clear feedback when an API call fails.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ckaraca/coinglass-apiv3.git
-   cd coinglass-apiv3
-   ```
+## Available Endpoints
 
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
+The following endpoints are available. For endpoints with parameters, you can pass them as query strings in the URL (e.g., `/liquidation/history?symbol=ETHUSDT&interval=h4`).
 
-3. Install the required packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### General
 
-4. Set up your Coinglass API key:
-   ```bash
-   export COINGLASS_API_KEY="YOUR_API_KEY"
-   ```
-   
-   To make this permanent, add the above line to your `.bashrc` or `.bash_profile` file.
+*   **`/`**
+    *   **Description:** Provides a welcome message and a list of all available endpoints.
+    *   **Method:** `GET`
+    *   **Parameters:** None
 
-5. Run the main script:
-   ```bash
-   python main.py
-   ```
+### Liquidation Data
 
-6. Check the generated images in the `images` folder.
+*   **`/liquidation/history`**
+    *   **Description:** Retrieves historical liquidation data for a specific trading pair.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `exchange` (string, optional, default: `Binance`)
+        *   `symbol` (string, optional, default: `BTCUSDT`)
+        *   `interval` (string, optional, default: `h1`)
+        *   `limit` (integer, optional, default: `100`)
 
-## Usage
+*   **`/liquidation/aggregated-history`**
+    *   **Description:** Retrieves aggregated historical liquidation data for a specific coin.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `symbol` (string, optional, default: `BTC`)
+        *   `interval` (string, optional, default: `h1`)
+        *   `limit` (integer, optional, default: `100`)
 
-```python
-from coinglass_api.api import CoinglassAPIv3
+*   **`/liquidation/coin-list`**
+    *   **Description:** Fetches liquidation data for all coins on a specified exchange.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `ex` (string, optional, default: `Binance`)
 
-cg = CoinglassAPIv3(api_key="your_api_key_here")
+*   **`/liquidation/exchange-list`**
+    *   **Description:** Fetches liquidation data for a coin across all exchanges.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `symbol` (string, optional, default: `BTC`)
+        *   `range` (string, optional, default: `1h`)
 
-# General Section
-supported_coins = cg.supported_coins()
-supported_pairs = cg.supported_exchange_pairs()
+### Long/Short Ratio
 
-# Open Interest Section
-ohlc_history = cg.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=10)
-ohlc_agg_history = cg.ohlc_aggregated_history(symbol="BTC", interval="1d", limit=10)
-ohlc_agg_stablecoin = cg.ohlc_aggregated_stablecoin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=10)
-ohlc_agg_coin = cg.ohlc_aggregated_coin_margin_history(exchanges="Binance", symbol="BTC", interval="1d", limit=10)
-exchange_list = cg.exchange_list(symbol="BTC")
-exchange_history = cg.exchange_history_chart(symbol="BTC", range="4h", unit="USD")
+*   **`/long-short-ratio/global-history`**
+    *   **Description:** Retrieves the global long/short account ratio for a trading pair.
+    *   **Method:** `GET`
+    *   **Parameters:** (Same as `/liquidation/history`)
 
-# Funding Rate Section
-funding_rate_ohlc = cg.funding_rate_ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=10)
-oi_weight_ohlc = cg.oi_weight_ohlc_history(symbol="BTC", interval="1d", limit=10)
-vol_weight_ohlc = cg.vol_weight_ohlc_history(symbol="BTC", interval="1d", limit=10)
-funding_rate_exchange_list = cg.funding_rate_exchange_list(symbol="BTC")
+*   **`/long-short-ratio/top-account-history`**
+    *   **Description:** Retrieves the long/short ratio history for top accounts.
+    *   **Method:** `GET`
+    *   **Parameters:** (Same as `/liquidation/history`)
 
-# Liquidation Section
-liquidation_history = cg.liquidation_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=10)
-liquidation_agg_history = cg.liquidation_aggregated_history(symbol="BTC", interval="1d", limit=10)
-liquidation_coin_list = cg.liquidation_coin_list(ex="Binance")
-liquidation_exchange_list = cg.liquidation_exchange_list(symbol="BTC", range="1h")
-liquidation_agg_heatmap = cg.liquidation_aggregated_heatmap_model2(symbol="BTC", range="3d")
-liquidation_heatmap = cg.liquidation_heatmap_model2(exchange="Binance", symbol="BTCUSDT", range="3d")
+*   **`/long-short-ratio/top-position-history`**
+    *   **Description:** Retrieves the long/short ratio history for top positions.
+    *   **Method:** `GET`
+    *   **Parameters:** (Same as `/liquidation/history`)
 
-# Long Short Account Ratio Section
-global_long_short_ratio = cg.global_long_short_account_ratio(exchange="Binance", symbol="BTCUSDT", interval="1h", limit=168)
-top_long_short_ratio = cg.top_long_short_account_ratio(exchange="Binance", symbol="BTCUSDT", interval="1h", limit=168)
-top_long_short_position_ratio = cg.top_long_short_position_ratio_history(exchange="Binance", symbol="BTCUSDT", interval="1h", limit=168)
-```
+### Funding Rate
 
-Each method returns a pandas DataFrame with the requested data. You can further process or analyze this data as needed for your specific use case.
+*   **`/funding-rate/ohlc-history`**
+    *   **Description:** Retrieves OHLC history for funding rates.
+    *   **Method:** `GET`
+    *   **Parameters:** (Same as `/liquidation/history`)
 
-## Example Visualization
+### Open Interest
 
-Here's an example of a liquidation heatmap generated using this API wrapper:
+*   **`/open-interest/ohlc-history`**
+    *   **Description:** Retrieves OHLC history for open interest.
+    *   **Method:** `GET`
+    *   **Parameters:** (Same as `/liquidation/history`)
 
-![BTC Liquidation Heatmap](images/btc_liquidation_heatmap_v2_1y.png)
+### Global and Spot Markets
 
-This heatmap visualizes the liquidation levels for Bitcoin over a one-year period, providing insights into potential price levels where significant liquidations might occur.
+*   **`/global/coins-markets`**
+    *   **Description:** Retrieves performance information for all available coins.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `exchanges` (string, optional, default: `Binance,OKX`)
+        *   `page_num` (integer, optional, default: 1)
+        *   `page_size` (integer, optional, default: 100)
 
-## Examples
+*   **`/global/pairs-markets`**
+    *   **Description:** Retrieves performance information for all pairs of a specific coin.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `symbol` (string, optional, default: `BTC`)
 
-```python
->>> cg.ohlc_history(exchange="Binance", symbol="BTCUSDT", interval="1d", limit=5).head()
-                     t         o         h         l         c         v
-time                                                                    
-2023-08-10  1691625600  29629.54  29858.00  29501.27  29443.40  25380.02
-2023-08-11  1691712000  29443.40  29678.89  29305.89  29416.15  22530.51
-2023-08-12  1691798400  29416.14  29483.50  29225.00  29411.82  11009.36
-2023-08-13  1691884800  29411.83  29598.70  29330.00  29438.90  13955.23
-2023-08-14  1691971200  29438.91  29888.00  29305.49  29794.48  31935.55
-```
+*   **`/spot/pairs-markets`**
+    *   **Description:** Retrieves performance information for all pairs of a specific coin in the Spot market.
+    *   **Method:** `GET`
+    *   **Parameters:**
+        *   `symbol` (string, optional, default: `BTC`)
 
-## Disclaimer
+### Indicators
 
-This project is for educational purposes only. You should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained here constitutes a solicitation, recommendation, endorsement, or offer by me or any third party service provider to buy or sell any securities or other financial instruments in this or in any other jurisdiction in which such solicitation or offer would be unlawful under the securities laws of such jurisdiction.
+*   **`/indicator/bitcoin-bubble-index`**
+    *   **Description:** Fetches the Bitcoin Bubble Index.
+    *   **Method:** `GET`
+    *   **Parameters:** None
 
-Under no circumstances will I be held responsible or liable in any way for any claims, damages, losses, expenses, costs, or liabilities whatsoever, including, without limitation, any direct or indirect damages for loss of profits.
+*   **`/indicator/fear-greed-index`**
+    *   **Description:** Fetches the Fear & Greed Index.
+    *   **Method:** `GET`
+    *   **Parameters:** None
+
+*   **`/indicator/ahr999-index`**
+    *   **Description:** Fetches the AHR999 Index.
+    *   **Method:** `GET`
+    *   **Parameters:** None
+
+*   **`/indicator/two-year-ma-multiplier`**
+    *   **Description:** Fetches the Two-Year MA Multiplier.
+    *   **Method:** `GET`
+    *   **Parameters:** None
+
+*   **`/indicator/puell-multiple`**
+    *   **Description:** Fetches the Puell Multiple.
+    *   **Method:** `GET`
+    *   **Parameters:** None
+
+---
+
+## Changelog
+
+*   **Initial Commit:** Base Flask application setup.
+*   **API Refactoring (1):**
+    *   Corrected the initialization of the `CoinglassAPIv3` class.
+    *   Added a helper function (`dataframe_to_json`) to correctly serialize pandas DataFrame objects to JSON.
+    *   Implemented a basic set of endpoints for core functionalities.
+    *   Added robust error handling for all endpoints.
+*   **API Refactoring (2):**
+    *   Expanded the API with additional endpoints for liquidation and long/short ratio data.
+    *   Refined the code structure for better readability and maintenance.
+    *   Added a comprehensive test suite (`api_test.py`) to simulate API calls and verify endpoint logic using mocks.
+*   **Documentation:**
+    *   Created a new, detailed `README.md` file.
+    *   Added a universal copyright notice.
+    *   Documented all available endpoints, including their parameters and default values.
+    *   Included a changelog to track project development.
+*   **Feature Expansion (1): Global & Spot Markets**
+    *   Added endpoints to retrieve market-wide data for both futures (`/global/coins-markets`, `/global/pairs-markets`) and spot (`/spot/pairs-markets`).
+    *   Updated the test suite to cover the new market endpoints.
+*   **Feature Expansion (2): Advanced Bitcoin Indicators**
+    *   Added endpoints for several key on-chain Bitcoin indicators:
+        *   `/indicator/ahr999-index`
+        *   `/indicator/two-year-ma-multiplier`
+        *   `/indicator/puell-multiple`
+    *   Updated the test suite to include these new indicator endpoints.
+
+---
+
+## Deployment
+
+This application is intended for deployment on a platform like Vercel. To deploy:
+
+1.  Push the code to a GitHub repository.
+2.  Create a new project on Vercel and link it to the repository.
+3.  Set the `COINGLASS_API_KEY` as an environment variable in the Vercel project settings.
+4.  Vercel will automatically build and deploy the application.

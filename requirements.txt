@@ -1,7 +1,3 @@
-requests==2.31.0
-matplotlib==3.8.0
-pandas==2.1.1
-seaborn==0.12.2
-numpy==1.26.0
-setuptools>=65.5.1
-mplfinance==0.12.9b7
+Flask==2.2.3
+coinglass_api==1.0.3
+pandas==1.5.3
